@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Bus Hopper</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main class="game-shell" aria-label="Bus Hopper game">
+    <section class="top-bar">
+      <a class="back-link" href="../" aria-label="Back to game portal">←</a>
+      <div class="brand">
+        <span class="brand__title">Bus Hopper</span>
+        <span class="brand__subtitle">Late For School</span>
+      </div>
+
+      <div class="stats" aria-live="polite">
+        <div>
+          <span>Score</span>
+          <strong id="scoreValue">0</strong>
+        </div>
+        <div>
+          <span>Best</span>
+          <strong id="bestValue">0</strong>
+        </div>
+        <div>
+          <span>Mode</span>
+          <strong id="modeValue">Normal</strong>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="modeButton" type="button">Late Mode</button>
+        <button id="muteButton" type="button" aria-pressed="false" aria-label="Mute sound">🔊</button>
+        <button id="restartButton" type="button">Restart</button>
+      </div>
+    </section>
+
+    <section class="canvas-wrap">
+      <canvas id="gameCanvas" width="960" height="540" aria-label="Side scrolling bus jumping game"></canvas>
+      <div id="overlay" class="overlay">
+        <div class="overlay__panel">
+          <p id="overlayKicker">School bell is ringing</p>
+          <h1 id="overlayTitle">Bus Hopper</h1>
+          <p id="overlayText">Jump, double jump, and land on the next bus. Do not fall into traffic.</p>
+          <button id="playButton" type="button">Start Game</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="touch-controls" aria-label="Touch controls">
+      <button id="jumpButton" type="button">Jump</button>
+    </section>
+  </main>
+
+  <script src="./physics.js"></script>
+  <script src="./bus.js"></script>
+  <script src="./player.js"></script>
+  <script src="./main.js"></script>
+</body>
+</html>

@@ -3,66 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Traffic Dash - 塞車衝衝衝</title>
+  <title>Road Trip Game Portal</title>
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-  <main class="game-shell" aria-label="Traffic Dash game">
-    <section class="top-bar" aria-label="Game status">
-      <div class="brand">
-        <span class="brand__title">Traffic Dash</span>
-        <span class="brand__subtitle">塞車衝衝衝</span>
-      </div>
+  <main class="portal">
+    <header class="portal__header">
+      <p class="portal__eyebrow">Tiny Browser Arcade</p>
+      <h1><span>Road Trip</span><span>Game Portal</span></h1>
+      <p class="portal__intro">Pick a cheerful canvas game and play instantly on desktop or mobile.</p>
+    </header>
 
-      <div class="hud" aria-live="polite">
-        <div class="hud__item">
-          <span class="hud__label">Distance</span>
-          <strong id="distanceValue">0.00 mi</strong>
-        </div>
-        <div class="hud__item">
-          <span class="hud__label">Speed</span>
-          <strong id="speedValue">1</strong>
-        </div>
-        <div class="hud__item">
-          <span class="hud__label">Patience</span>
-          <strong id="patienceValue">100</strong>
-        </div>
-        <div class="hud__item hud__status">
-          <span class="hud__label">Status</span>
-          <strong id="statusValue">Road trip begins</strong>
-        </div>
-      </div>
+    <section class="game-grid" aria-label="Available games">
+      <a class="game-card game-card--traffic" href="./traffic-dash/">
+        <span class="game-card__art" aria-hidden="true">🚗</span>
+        <span class="game-card__label">Traffic Dash</span>
+        <strong>塞車衝衝衝</strong>
+        <span class="game-card__text">Switch lanes, manage speed, and keep your patience alive for 10 miles.</span>
+      </a>
 
-      <div class="menu-actions">
-        <button id="muteButton" class="icon-button" type="button" aria-pressed="false" aria-label="Mute sound">🔊</button>
-        <button id="restartButton" class="text-button" type="button">Restart</button>
-      </div>
-    </section>
-
-    <section class="canvas-wrap">
-      <canvas id="gameCanvas" width="540" height="960" aria-label="Cartoon highway game canvas"></canvas>
-
-      <div id="gameOverlay" class="overlay overlay--hidden" role="dialog" aria-modal="true" aria-labelledby="overlayTitle">
-        <div class="overlay__panel">
-          <p id="overlayBadge" class="overlay__badge">Road Trip</p>
-          <h1 id="overlayTitle">Traffic Dash</h1>
-          <p id="overlayText">Reach 10 miles before your patience runs out.</p>
-          <button id="overlayRestartButton" class="primary-button" type="button">Play Again</button>
-        </div>
-      </div>
-    </section>
-
-    <section class="touch-controls" aria-label="Touch controls">
-      <button class="touch-button" type="button" data-action="left" aria-label="Move left">⬅️</button>
-      <button class="touch-button touch-button--slow" type="button" data-action="slow" aria-label="Slow down">🐢 Slow</button>
-      <button class="touch-button touch-button--fast" type="button" data-action="fast" aria-label="Speed up">⚡ Fast</button>
-      <button class="touch-button" type="button" data-action="right" aria-label="Move right">➡️</button>
+      <a class="game-card game-card--bus" href="./bus-hopper/">
+        <span class="game-card__art" aria-hidden="true">🚌</span>
+        <span class="game-card__label">Bus Hopper</span>
+        <strong>Late For School</strong>
+        <span class="game-card__text">Double jump between moving buses while the principal closes in.</span>
+      </a>
     </section>
   </main>
-
-  <script src="./state.js"></script>
-  <script src="./controls.js"></script>
-  <script src="./render.js"></script>
-  <script src="./main.js"></script>
 </body>
 </html>
