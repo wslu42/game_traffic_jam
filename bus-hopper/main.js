@@ -33,6 +33,7 @@ function createGame() {
   const buses = createStartingBuses();
   const player = createPlayer();
   player.landOn(buses[0]);
+  const best = readBestScore();
   return {
     mode: "title",
     lateMode: false,
@@ -40,7 +41,7 @@ function createGame() {
     buses,
     cameraX: 0,
     score: 0,
-    best: Number(localStorage.getItem("busHopperBest") || 0),
+    best,
     difficulty: 0,
     particles: [],
     principalX: -180,
@@ -126,7 +127,7 @@ function endGame(title, text) {
   if (game.mode !== "playing") return;
   game.mode = "gameover";
   game.best = Math.max(game.best, game.score);
-  localStorage.setItem("busHopperBest", String(game.best));
+  writeBestScore(game.best);
   elements.overlay.classList.remove("is-hidden");
   elements.overlayKicker.textContent = "Bell rings";
   elements.overlayTitle.textContent = title;
@@ -138,7 +139,6 @@ function endGame(title, text) {
 function jump() {
   if (game.mode !== "playing") {
     startGame();
-    return;
   }
 
   if (game.player.jump()) {
@@ -159,7 +159,15 @@ function setupControls() {
   });
 
   elements.playButton.addEventListener("click", startGame);
-  elements.restartButton.addEventListener("click", startGame);
+  elements.restartButton.addEventListener("click", () => {
+    startGame();
+    elements.restartButton.blur();
+  });
+  elements.restartButton.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    startGame();
+    elements.restartButton.blur();
+  });
   elements.jumpButton.addEventListener("pointerdown", (event) => {
     event.preventDefault();
     jump();
@@ -369,6 +377,22 @@ function createAudio() {
       oscillator.stop(ctx.currentTime + sound[1]);
     }
   };
+}
+
+function readBestScore() {
+  try {
+    return Number(localStorage.getItem("busHopperBest") || 0);
+  } catch (error) {
+    return 0;
+  }
+}
+
+function writeBestScore(score) {
+  try {
+    localStorage.setItem("busHopperBest", String(score));
+  } catch (error) {
+    // Some private browsing modes block localStorage. The run can continue.
+  }
 }
 
 function drawCloud(x, y, scale) {

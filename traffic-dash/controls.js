@@ -30,7 +30,17 @@ function setupControls(elements) {
   });
 
   restartButton.addEventListener("click", resetGame);
+  restartButton.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    resetGame();
+    restartButton.blur();
+  });
   overlayRestartButton.addEventListener("click", resetGame);
+  overlayRestartButton.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    resetGame();
+    overlayRestartButton.blur();
+  });
 
   muteButton.addEventListener("click", () => {
     setMuted(!state.muted);

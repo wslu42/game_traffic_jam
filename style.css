@@ -124,11 +124,13 @@ h1 span {
   right: 26px;
   font-size: 5.6rem;
   filter: drop-shadow(0 8px 0 rgba(20, 41, 67, 0.12));
+  pointer-events: none;
 }
 
 .game-card__label,
 .game-card strong,
-.game-card__text {
+.game-card__text,
+.game-card__button {
   position: relative;
 }
 
@@ -150,6 +152,21 @@ h1 span {
   font-weight: 750;
 }
 
+.game-card__button {
+  width: fit-content;
+  margin-top: 8px;
+  padding: 10px 13px;
+  border-radius: 8px;
+  color: #ffffff;
+  background: var(--blue);
+  box-shadow: 0 4px 0 rgba(20, 41, 67, 0.18);
+  font-weight: 950;
+}
+
+.game-card--bus .game-card__button {
+  background: var(--orange);
+}
+
 @media (max-width: 760px) {
   .portal {
     align-content: start;
@@ -161,5 +178,15 @@ h1 span {
 
   .game-card {
     min-height: 245px;
+  }
+
+  .game-card__art {
+    right: -8px;
+    top: 48px;
+    opacity: 0.48;
+  }
+
+  .game-card__text {
+    max-width: 280px;
   }
 }

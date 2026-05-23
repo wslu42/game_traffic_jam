@@ -42,6 +42,11 @@ button {
   touch-action: manipulation;
 }
 
+a {
+  color: inherit;
+  font: inherit;
+}
+
 .game-shell {
   width: min(100vw, 980px);
   min-height: 100svh;
@@ -54,7 +59,7 @@ button {
 
 .top-bar {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   padding: 10px;
@@ -67,6 +72,20 @@ button {
 .brand {
   min-width: 124px;
   line-height: 1.05;
+}
+
+.back-link {
+  width: 44px;
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: #ffffff;
+  background: var(--blue);
+  text-decoration: none;
+  font-size: 1.45rem;
+  font-weight: 900;
+  box-shadow: 0 5px 0 rgba(20, 50, 74, 0.16);
 }
 
 .brand__title,
@@ -269,6 +288,10 @@ button {
     align-content: start;
   }
 
+  .back-link {
+    width: 46px;
+  }
+
   .hud {
     grid-template-columns: 1fr 1fr;
   }
@@ -295,15 +318,15 @@ button {
 
 @media (max-width: 720px) and (orientation: portrait) {
   .top-bar {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: auto 1fr auto;
   }
 
   .brand {
-    grid-column: 1 / 2;
+    grid-column: 2 / 3;
   }
 
   .menu-actions {
-    grid-column: 2 / 3;
+    grid-column: 3 / 4;
     grid-row: 1 / 2;
   }
 
