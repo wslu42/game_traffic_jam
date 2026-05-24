@@ -1,11 +1,13 @@
 (function () {
-const { lerp, resolvePlatformLanding } = window.BusHopperPhysics;
+const { lerp, rectsOverlap, resolvePlatformLanding } = window.BusHopperPhysics;
 const { createStartingBuses, updateBuses, ensureFutureBuses, removeOldBuses, drawBus } = window.BusHopperBus;
 const { createPlayer, updatePlayer, drawPlayer } = window.BusHopperPlayer;
 
 const WIDTH = 960;
 const HEIGHT = 540;
 const GAME_SPEED_SCALE = 1;
+const FINISH_SCORE = 650;
+const FINISH_X = FINISH_SCORE * 8;
 const elements = {
   canvas: document.querySelector("#gameCanvas"),
   scoreValue: document.querySelector("#scoreValue"),
@@ -45,10 +47,12 @@ function createGame() {
     score: 0,
     best,
     difficulty: 0,
+    birds: [],
+    nextBirdX: 900,
     particles: [],
     principalX: -180,
     muted: false,
-    message: "Jump between buses to get to school."
+    message: "Jump between buses, dodge birds, and reach school."
   };
 }
 
@@ -109,11 +113,64 @@ function update(deltaSeconds) {
   game.buses = removeOldBuses(game.buses, game.cameraX);
 
   game.score = Math.max(game.score, Math.floor(game.player.x / 8));
+  updateBirds(deltaSeconds);
   updateParticles(deltaSeconds);
   updatePrincipal(deltaSeconds);
+  checkBirdCollisions();
 
   if (game.player.y > HEIGHT + 80) {
     endGame("Game Over", "You slipped into traffic. Try another hop!");
+  } else if (game.player.x >= FINISH_X) {
+    endGame("You Made It!", "You reached school before the bell finished ringing.", "win");
+  }
+}
+
+function updateBirds(deltaSeconds) {
+  while (game.nextBirdX < game.cameraX + WIDTH + 650 && game.nextBirdX < FINISH_X - 450) {
+    game.birds.push(createBird(game.nextBirdX));
+    game.nextBirdX += randomBetween(760, 1020);
+  }
+
+  for (const bird of game.birds) {
+    bird.x += bird.velocityX * deltaSeconds;
+    bird.wingTime += deltaSeconds * 9;
+  }
+
+  game.birds = game.birds.filter((bird) => bird.x > game.cameraX - 180);
+}
+
+function createBird(x) {
+  return {
+    x,
+    y: randomBetween(112, 238),
+    width: 48,
+    height: 30,
+    velocityX: randomBetween(-52, -34),
+    wingTime: Math.random() * Math.PI * 2
+  };
+}
+
+function checkBirdCollisions() {
+  const playerRect = {
+    x: game.player.x + 8,
+    y: game.player.y + 5,
+    width: game.player.width - 16,
+    height: game.player.height - 10
+  };
+
+  for (const bird of game.birds) {
+    const birdRect = {
+      x: bird.x - bird.width / 2,
+      y: bird.y - bird.height / 2,
+      width: bird.width,
+      height: bird.height
+    };
+
+    if (rectsOverlap(playerRect, birdRect)) {
+      makeParticles(game.player.x + game.player.width / 2, game.player.y + 18, "#ffe066", 14);
+      endGame("Bird Bonk!", "A hallway bird crossed your route. Try a lower hop!");
+      return;
+    }
   }
 }
 
@@ -129,17 +186,17 @@ function updatePrincipal(deltaSeconds) {
   }
 }
 
-function endGame(title, text) {
+function endGame(title, text, soundName = "gameover") {
   if (game.mode !== "playing") return;
   game.mode = "gameover";
   game.best = Math.max(game.best, game.score);
   writeBestScore(game.best);
   elements.overlay.classList.remove("is-hidden");
-  elements.overlayKicker.textContent = "Bell rings";
+  elements.overlayKicker.textContent = soundName === "win" ? "At school" : "Bell rings";
   elements.overlayTitle.textContent = title;
   elements.overlayText.textContent = `${text} Score: ${game.score}`;
   elements.playButton.textContent = "Play Again";
-  audio.play("gameover");
+  audio.play(soundName);
 }
 
 function jump() {
@@ -216,9 +273,11 @@ function updateHud() {
 function draw() {
   drawBackground();
   drawTrafficLanes();
+  drawFinishLine();
   for (const bus of game.buses) {
     drawBus(context, bus, game.cameraX);
   }
+  drawBirds();
   drawParticles();
   if (game.lateMode) {
     drawPrincipal();
@@ -279,6 +338,73 @@ function drawDifficultyRibbon() {
   context.textAlign = "center";
   context.textBaseline = "middle";
   context.fillText("School rush meter", 130, 32);
+}
+
+function drawFinishLine() {
+  const x = FINISH_X - game.cameraX;
+  if (x < -80 || x > WIDTH + 180) return;
+
+  context.fillStyle = "#fffdf4";
+  roundRect(x - 30, 232, 60, 160, 8);
+  context.fill();
+  context.fillStyle = "#17304b";
+  for (let row = 0; row < 8; row += 1) {
+    for (let col = 0; col < 2; col += 1) {
+      if ((row + col) % 2 === 0) {
+        context.fillRect(x - 27 + col * 27, 238 + row * 18, 27, 18);
+      }
+    }
+  }
+
+  context.fillStyle = "#ff7ba6";
+  roundRect(x - 104, 196, 208, 44, 8);
+  context.fill();
+  context.fillStyle = "#ffffff";
+  context.font = "900 18px system-ui, sans-serif";
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.fillText("SCHOOL FINISH", x, 218);
+}
+
+function drawBirds() {
+  for (const bird of game.birds) {
+    const x = bird.x - game.cameraX;
+    const wing = Math.sin(bird.wingTime) * 9;
+
+    context.save();
+    context.translate(x, bird.y);
+    context.fillStyle = "rgba(23, 48, 75, 0.16)";
+    context.beginPath();
+    context.ellipse(4, 26, 24, 7, 0, 0, Math.PI * 2);
+    context.fill();
+
+    context.strokeStyle = "#17304b";
+    context.lineWidth = 5;
+    context.lineCap = "round";
+    context.beginPath();
+    context.moveTo(-6, 1);
+    context.quadraticCurveTo(-22, -18 - wing, -38, -2);
+    context.moveTo(6, 1);
+    context.quadraticCurveTo(22, -18 + wing, 38, -2);
+    context.stroke();
+
+    context.fillStyle = "#ffe066";
+    context.beginPath();
+    context.ellipse(0, 4, 18, 12, 0, 0, Math.PI * 2);
+    context.fill();
+    context.fillStyle = "#ff8f3d";
+    context.beginPath();
+    context.moveTo(-20, 2);
+    context.lineTo(-34, -4);
+    context.lineTo(-34, 8);
+    context.closePath();
+    context.fill();
+    context.fillStyle = "#17304b";
+    context.beginPath();
+    context.arc(8, 0, 2.5, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
+  }
 }
 
 function drawPrincipal() {
@@ -378,7 +504,8 @@ function createAudio() {
       if (!ctx) return;
       const map = {
         jump: [620, 0.08, "triangle", 0.045],
-        gameover: [120, 0.18, "sawtooth", 0.035]
+        gameover: [120, 0.18, "sawtooth", 0.035],
+        win: [820, 0.18, "triangle", 0.05]
       };
       const sound = map[name];
       if (!sound) return;
