@@ -4,18 +4,19 @@ const LANE_Y = [286, 360, 434];
 
 function createStartingBuses() {
   return [
-    createBus(70, LANE_Y[1], 260, 0, 0),
-    createBus(430, LANE_Y[0], 245, 0, 1),
-    createBus(780, LANE_Y[2], 270, 0, 2)
+    createBus(70, LANE_Y[1], 300, 0, 0),
+    createBus(540, LANE_Y[0], 280, 0, 1),
+    createBus(1000, LANE_Y[1], 300, 0, 2)
   ];
 }
 
 function createBus(x, y, width, difficulty, index) {
   const direction = Math.random() < 0.5 ? -1 : 1;
-  const speed = direction * randomBetween(12 + difficulty * 5, 58 + difficulty * 12);
+  const speed = direction * randomBetween(4 + difficulty * 0.4, 11 + difficulty * 0.8);
   return {
     id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
     x,
+    homeX: x,
     y,
     width,
     height: 72,
@@ -31,31 +32,37 @@ function updateBuses(buses, deltaSeconds, cameraX, difficulty) {
     bus.x += bus.velocityX * deltaSeconds;
     bus.wobble += deltaSeconds * 3;
 
-    const laneLeft = cameraX - 220;
-    const laneRight = cameraX + 1320;
-    if (bus.x < laneLeft || bus.x + bus.width > laneRight) {
+    const laneLeft = bus.homeX - 22;
+    const laneRight = bus.homeX + 22;
+    if (bus.x < laneLeft || bus.x > laneRight) {
       bus.velocityX *= -1;
-      bus.x = Math.max(laneLeft, Math.min(laneRight - bus.width, bus.x));
+      bus.x = Math.max(laneLeft, Math.min(laneRight, bus.x));
     }
 
     if (Math.abs(bus.velocityX) > 0) {
-      bus.velocityX += Math.sign(bus.velocityX) * deltaSeconds * difficulty * 1.2;
+      bus.velocityX = Math.sign(bus.velocityX) * Math.min(Math.abs(bus.velocityX), 18 + difficulty);
     }
   }
 }
 
 function ensureFutureBuses(buses, farthestX, difficulty) {
-  let rightEdge = buses.reduce((max, bus) => Math.max(max, bus.x + bus.width), farthestX);
-  while (rightEdge < farthestX + 1280) {
+  buses.sort((a, b) => a.homeX - b.homeX);
+  let lastBus = buses[buses.length - 1];
+  let rightEdge = lastBus ? lastBus.homeX + lastBus.width : farthestX;
+  let lastLane = lastBus ? lastBus.laneIndex : 1;
+  const spawnUntil = farthestX + 860;
+
+  while (rightEdge < spawnUntil && buses.length < 8) {
     const gap = randomBetween(
-      Math.max(120, 230 - difficulty * 10),
-      Math.max(230, 390 - difficulty * 8)
+      Math.max(145, 185 - difficulty * 4),
+      Math.max(210, 260 - difficulty * 3)
     );
-    const width = randomBetween(210, Math.max(230, 290 - difficulty * 4));
-    const lane = Math.floor(Math.random() * LANE_Y.length);
+    const width = randomBetween(270, 330);
+    const lane = chooseNextLane(lastLane);
     const bus = createBus(rightEdge + gap, LANE_Y[lane], width, difficulty, buses.length);
     buses.push(bus);
-    rightEdge = bus.x + bus.width;
+    lastLane = lane;
+    rightEdge = bus.homeX + bus.width;
   }
 }
 
@@ -128,6 +135,11 @@ function roundRect(context, x, y, width, height, radius) {
 
 function randomBetween(min, max) {
   return min + Math.random() * (max - min);
+}
+
+function chooseNextLane(lastLane) {
+  const options = [0, 1, 2].filter((lane) => lane !== lastLane);
+  return options[Math.floor(Math.random() * options.length)];
 }
 
 window.BusHopperBus = {
