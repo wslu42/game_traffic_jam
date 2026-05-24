@@ -5,7 +5,7 @@ const { createPlayer, updatePlayer, drawPlayer } = window.BusHopperPlayer;
 
 const WIDTH = 960;
 const HEIGHT = 540;
-const GAME_SPEED_SCALE = 0.2;
+const GAME_SPEED_SCALE = 1;
 const elements = {
   canvas: document.querySelector("#gameCanvas"),
   scoreValue: document.querySelector("#scoreValue"),
