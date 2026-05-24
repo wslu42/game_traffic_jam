@@ -1,7 +1,7 @@
 (function () {
 const BUS_COLORS = ["#ffd23f", "#ffc33a", "#ffe066", "#ffb84d"];
 const LANE_Y = [286, 360, 434];
-const MAX_SAFE_GAP = 245;
+const MAX_SAFE_GAP = 165;
 const MIN_READABLE_GAP = 95;
 
 function createStartingBuses() {
@@ -150,10 +150,10 @@ function chooseReachableGap(fromLane, toLane, difficulty) {
   const isBigLaneChange = Math.abs(toLane - fromLane) > 1;
 
   let maxGap = MAX_SAFE_GAP - difficulty * 2;
-  let minGap = 155;
+  let minGap = 105;
 
   if (isUphill) {
-    maxGap -= 45;
+    maxGap -= 28;
     minGap -= 12;
   }
 
@@ -170,8 +170,8 @@ function chooseReachableGap(fromLane, toLane, difficulty) {
 function chooseBusWidth(fromLane, toLane, difficulty) {
   const verticalChange = LANE_Y[toLane] - LANE_Y[fromLane];
   const isUphill = verticalChange < 0;
-  const baseMin = isUphill ? 330 : 300;
-  const baseMax = isUphill ? 380 : 355;
+  const baseMin = isUphill ? 350 : 320;
+  const baseMax = isUphill ? 395 : 370;
   const difficultyTrim = Math.min(28, difficulty * 2);
   return randomBetween(baseMin - difficultyTrim, baseMax - difficultyTrim);
 }
