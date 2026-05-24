@@ -1,7 +1,7 @@
 (function () {
 const BUS_COLORS = ["#ffd23f", "#ffc33a", "#ffe066", "#ffb84d"];
 const LANE_Y = [286, 360, 434];
-const MAX_SAFE_GAP = 205;
+const MAX_SAFE_GAP = 245;
 const MIN_READABLE_GAP = 95;
 
 function createStartingBuses() {
@@ -150,7 +150,7 @@ function chooseReachableGap(fromLane, toLane, difficulty) {
   const isBigLaneChange = Math.abs(toLane - fromLane) > 1;
 
   let maxGap = MAX_SAFE_GAP - difficulty * 2;
-  let minGap = 135;
+  let minGap = 155;
 
   if (isUphill) {
     maxGap -= 45;

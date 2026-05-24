@@ -7,7 +7,7 @@ function createPlayer() {
     y: 250,
     width: 42,
     height: 58,
-    velocityX: 170,
+    velocityX: 204,
     velocityY: 0,
     jumpsUsed: 0,
     grounded: false,
@@ -55,7 +55,7 @@ function createPlayer() {
       this.jumpsUsed = 0;
       this.platformId = platform.id;
       this.coyoteTimer = 0.14;
-      this.velocityX = clamp(this.velocityX + 8, 150, 315);
+      this.velocityX = clamp(this.velocityX + 10, 180, 378);
     },
 
     leaveGround() {
@@ -79,7 +79,7 @@ function updatePlayer(player, deltaSeconds, currentPlatform, difficulty) {
     player.y += player.velocityY * deltaSeconds;
   }
 
-  player.velocityX = clamp(player.velocityX + deltaSeconds * (3.5 + difficulty * 0.45), 150, 340 + difficulty * 10);
+  player.velocityX = clamp(player.velocityX + deltaSeconds * (4.2 + difficulty * 0.54), 180, 408 + difficulty * 12);
   player.coyoteTimer = player.grounded ? 0.14 : Math.max(0, player.coyoteTimer - deltaSeconds);
   player.jumpBufferTimer = Math.max(0, player.jumpBufferTimer - deltaSeconds);
   player.idleTimer = Math.abs(player.x - previousX) < 8 * deltaSeconds ? player.idleTimer + deltaSeconds : 0;
