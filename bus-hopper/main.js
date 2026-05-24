@@ -25,6 +25,7 @@ const context = setupCanvas(elements.canvas);
 const audio = createAudio();
 let game = createGame();
 let lastFrame = performance.now();
+let lastJumpInputTime = 0;
 
 setupControls();
 requestAnimationFrame(loop);
@@ -92,6 +93,10 @@ function update(deltaSeconds) {
     for (const bus of game.buses) {
       if (resolvePlatformLanding(game.player, bus, previousBottom)) {
         makeParticles(game.player.x + game.player.width / 2, bus.y, "#fff3a7", 10);
+        if (game.player.consumeBufferedJump()) {
+          makeParticles(game.player.x + game.player.width / 2, game.player.y + game.player.height, "#ffffff", 8);
+          audio.play("jump");
+        }
         break;
       }
     }
@@ -141,10 +146,18 @@ function jump() {
     startGame();
   }
 
-  if (game.player.jump()) {
+  if (game.player.requestJump()) {
     makeParticles(game.player.x + game.player.width / 2, game.player.y + game.player.height, "#ffffff", 8);
     audio.play("jump");
   }
+}
+
+function jumpFromButton(event) {
+  event.preventDefault();
+  const now = performance.now();
+  if (now - lastJumpInputTime < 90) return;
+  lastJumpInputTime = now;
+  jump();
 }
 
 function setupControls() {
@@ -168,10 +181,9 @@ function setupControls() {
     startGame();
     elements.restartButton.blur();
   });
-  elements.jumpButton.addEventListener("pointerdown", (event) => {
-    event.preventDefault();
-    jump();
-  });
+  elements.jumpButton.addEventListener("pointerdown", jumpFromButton);
+  elements.jumpButton.addEventListener("touchstart", jumpFromButton, { passive: false });
+  elements.jumpButton.addEventListener("click", jumpFromButton);
 
   elements.modeButton.addEventListener("click", () => {
     game.lateMode = !game.lateMode;

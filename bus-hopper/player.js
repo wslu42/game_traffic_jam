@@ -12,6 +12,8 @@ function createPlayer() {
     jumpsUsed: 0,
     grounded: false,
     platformId: null,
+    coyoteTimer: 0,
+    jumpBufferTimer: 0,
     idleTimer: 0,
     blinkTimer: 0,
 
@@ -25,24 +27,41 @@ function createPlayer() {
     },
 
     jump() {
-      if (this.jumpsUsed >= 2) return false;
-      this.velocityY = this.jumpsUsed === 0 ? -JUMP_SPEED : -DOUBLE_JUMP_SPEED;
-      this.jumpsUsed += 1;
+      const canGroundJump = this.grounded || this.coyoteTimer > 0;
+      const canAirJump = !canGroundJump && this.jumpsUsed < 2;
+      if (!canGroundJump && !canAirJump) return false;
+
+      this.velocityY = canGroundJump ? -JUMP_SPEED : -DOUBLE_JUMP_SPEED;
+      this.jumpsUsed = canGroundJump ? 1 : this.jumpsUsed + 1;
       this.grounded = false;
       this.platformId = null;
+      this.coyoteTimer = 0;
+      this.jumpBufferTimer = 0;
       return true;
+    },
+
+    requestJump() {
+      this.jumpBufferTimer = 0.14;
+      return this.jump();
+    },
+
+    consumeBufferedJump() {
+      if (this.jumpBufferTimer <= 0) return false;
+      return this.jump();
     },
 
     landOn(platform) {
       this.grounded = true;
       this.jumpsUsed = 0;
       this.platformId = platform.id;
+      this.coyoteTimer = 0.14;
       this.velocityX = clamp(this.velocityX + 8, 150, 315);
     },
 
     leaveGround() {
       this.grounded = false;
       this.platformId = null;
+      this.coyoteTimer = 0.14;
       if (this.jumpsUsed === 0) this.jumpsUsed = 1;
     }
   };
@@ -61,6 +80,8 @@ function updatePlayer(player, deltaSeconds, currentPlatform, difficulty) {
   }
 
   player.velocityX = clamp(player.velocityX + deltaSeconds * (3.5 + difficulty * 0.45), 150, 340 + difficulty * 10);
+  player.coyoteTimer = player.grounded ? 0.14 : Math.max(0, player.coyoteTimer - deltaSeconds);
+  player.jumpBufferTimer = Math.max(0, player.jumpBufferTimer - deltaSeconds);
   player.idleTimer = Math.abs(player.x - previousX) < 8 * deltaSeconds ? player.idleTimer + deltaSeconds : 0;
   player.blinkTimer += deltaSeconds;
 }
