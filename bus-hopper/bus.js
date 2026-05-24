@@ -3,16 +3,23 @@ const BUS_COLORS = ["#ffd23f", "#ffc33a", "#ffe066", "#ffb84d"];
 const LANE_Y = [286, 360, 434];
 const MAX_SAFE_GAP = 165;
 const MIN_READABLE_GAP = 95;
+const BUS_VARIANTS = [
+  { windows: 1, width: 150 },
+  { windows: 2, width: 205 },
+  { windows: 3, width: 260 },
+  { windows: 4, width: 315 },
+  { windows: 5, width: 370 }
+];
 
 function createStartingBuses() {
   return [
-    createBus(70, LANE_Y[1], 300, 0, 0),
-    createBus(505, LANE_Y[1], 300, 0, 1),
-    createBus(940, LANE_Y[0], 320, 0, 2)
+    createBus(70, LANE_Y[1], BUS_VARIANTS[3], 0, 0),
+    createBus(505, LANE_Y[1], BUS_VARIANTS[2], 0, 1),
+    createBus(910, LANE_Y[0], BUS_VARIANTS[4], 0, 2)
   ];
 }
 
-function createBus(x, y, width, difficulty, index) {
+function createBus(x, y, variant, difficulty, index) {
   const direction = Math.random() < 0.5 ? -1 : 1;
   const speed = direction * randomBetween(4 + difficulty * 0.4, 11 + difficulty * 0.8);
   return {
@@ -20,8 +27,9 @@ function createBus(x, y, width, difficulty, index) {
     x,
     homeX: x,
     y,
-    width,
+    width: variant.width,
     height: 72,
+    windows: variant.windows,
     velocityX: index === 0 ? 0 : speed,
     color: BUS_COLORS[Math.floor(Math.random() * BUS_COLORS.length)],
     laneIndex: LANE_Y.indexOf(y),
@@ -56,9 +64,9 @@ function ensureFutureBuses(buses, farthestX, difficulty) {
 
   while (rightEdge < spawnUntil && buses.length < 8) {
     const lane = chooseNextLane(lastLane);
-    const gap = chooseReachableGap(lastLane, lane, difficulty);
-    const width = chooseBusWidth(lastLane, lane, difficulty);
-    const bus = createBus(rightEdge + gap, LANE_Y[lane], width, difficulty, buses.length);
+    const variant = chooseBusVariant(lastLane, lane, difficulty);
+    const gap = chooseReachableGap(lastLane, lane, difficulty, variant);
+    const bus = createBus(rightEdge + gap, LANE_Y[lane], variant, difficulty, buses.length);
     buses.push(bus);
     lastLane = lane;
     rightEdge = bus.homeX + bus.width;
@@ -87,15 +95,15 @@ function drawBus(context, bus, cameraX) {
   context.fill();
 
   context.fillStyle = "#17304b";
-  context.font = "900 16px system-ui, sans-serif";
+  context.font = `${bus.windows <= 1 ? 13 : 16}px system-ui, sans-serif`;
   context.textAlign = "left";
   context.textBaseline = "middle";
-  context.fillText("SCHOOL", screenX + 25, y + 18);
+  context.fillText(bus.windows <= 1 ? "BUS" : "SCHOOL", screenX + 20, y + 18);
 
   context.fillStyle = "#c7f2ff";
-  const windowCount = Math.max(3, Math.floor(bus.width / 62));
-  for (let i = 0; i < windowCount; i += 1) {
-    roundRect(context, screenX + 88 + i * 48, y + 13, 34, 24, 6);
+  for (let i = 0; i < bus.windows; i += 1) {
+    const startX = screenX + Math.max(60, bus.width - bus.windows * 44 - 16);
+    roundRect(context, startX + i * 44, y + 13, 32, 24, 6);
     context.fill();
   }
 
@@ -144,7 +152,7 @@ function chooseNextLane(lastLane) {
   return options[Math.floor(Math.random() * options.length)];
 }
 
-function chooseReachableGap(fromLane, toLane, difficulty) {
+function chooseReachableGap(fromLane, toLane, difficulty, nextVariant) {
   const verticalChange = LANE_Y[toLane] - LANE_Y[fromLane];
   const isUphill = verticalChange < 0;
   const isBigLaneChange = Math.abs(toLane - fromLane) > 1;
@@ -161,19 +169,31 @@ function chooseReachableGap(fromLane, toLane, difficulty) {
     maxGap -= 30;
   }
 
+  if (nextVariant.windows <= 2) {
+    maxGap -= 24;
+    minGap -= 10;
+  }
+
+  if (nextVariant.windows === 1) {
+    maxGap -= 18;
+  }
+
   maxGap = Math.max(MIN_READABLE_GAP + 35, maxGap);
   minGap = Math.max(MIN_READABLE_GAP, Math.min(minGap, maxGap - 25));
 
   return randomBetween(minGap, maxGap);
 }
 
-function chooseBusWidth(fromLane, toLane, difficulty) {
+function chooseBusVariant(fromLane, toLane, difficulty) {
   const verticalChange = LANE_Y[toLane] - LANE_Y[fromLane];
   const isUphill = verticalChange < 0;
-  const baseMin = isUphill ? 350 : 320;
-  const baseMax = isUphill ? 395 : 370;
-  const difficultyTrim = Math.min(28, difficulty * 2);
-  return randomBetween(baseMin - difficultyTrim, baseMax - difficultyTrim);
+  const earlyGame = difficulty < 2.5;
+  const candidates = BUS_VARIANTS.filter((variant) => {
+    if (isUphill) return variant.windows >= 3;
+    if (earlyGame) return variant.windows >= 2;
+    return true;
+  });
+  return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
 window.BusHopperBus = {
