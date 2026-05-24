@@ -5,6 +5,7 @@ const { createPlayer, updatePlayer, drawPlayer } = window.BusHopperPlayer;
 
 const WIDTH = 960;
 const HEIGHT = 540;
+const GAME_SPEED_SCALE = 0.2;
 const elements = {
   canvas: document.querySelector("#gameCanvas"),
   scoreValue: document.querySelector("#scoreValue"),
@@ -69,7 +70,7 @@ function loop(now) {
   lastFrame = now;
 
   if (game.mode === "playing") {
-    update(deltaSeconds);
+    update(deltaSeconds * GAME_SPEED_SCALE);
   }
 
   draw();
@@ -184,6 +185,8 @@ function setupControls() {
   elements.jumpButton.addEventListener("pointerdown", jumpFromButton);
   elements.jumpButton.addEventListener("touchstart", jumpFromButton, { passive: false });
   elements.jumpButton.addEventListener("click", jumpFromButton);
+  elements.canvas.addEventListener("pointerdown", jumpFromButton);
+  elements.canvas.addEventListener("touchstart", jumpFromButton, { passive: false });
 
   elements.modeButton.addEventListener("click", () => {
     game.lateMode = !game.lateMode;
@@ -196,6 +199,8 @@ function setupControls() {
     elements.muteButton.setAttribute("aria-pressed", String(game.muted));
   });
 }
+
+window.BusHopperPressJump = jumpFromButton;
 
 function updateModeButton() {
   elements.modeValue.textContent = game.lateMode ? "Late" : "Normal";

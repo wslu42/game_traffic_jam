@@ -21,7 +21,7 @@ function rectsOverlap(a, b) {
 
 function resolvePlatformLanding(player, platform, previousBottom) {
   const playerRect = player.getRect();
-  const platformRect = platform.getTopRect();
+  const platformRect = getPlatformRect(platform);
   const falling = player.velocityY >= 0;
   const crossedTop = previousBottom <= platformRect.y + 10 && playerRect.y + playerRect.height >= platformRect.y;
 
@@ -33,6 +33,19 @@ function resolvePlatformLanding(player, platform, previousBottom) {
   }
 
   return false;
+}
+
+function getPlatformRect(platform) {
+  if (typeof platform.getTopRect === "function") {
+    return platform.getTopRect();
+  }
+
+  return {
+    x: platform.x,
+    y: platform.y,
+    width: platform.width,
+    height: Math.max(12, platform.height || 12)
+  };
 }
 
 window.BusHopperPhysics = {
