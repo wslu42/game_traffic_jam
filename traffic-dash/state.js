@@ -4,6 +4,9 @@ const GAME_HEIGHT = 960;
 const LANE_COUNT = 3;
 const WIN_DISTANCE = 10;
 const MAX_SPEED = 5;
+const STARTING_PATIENCE = 100;
+const MAX_PATIENCE = 150;
+const PATIENCE_PACK_RESTORE = 25;
 
 const TRAFFIC_TYPES = [
   { emoji: "🚗", name: "car", width: 68, height: 92, color: "#ff7aa8" },
@@ -17,7 +20,7 @@ const MESSAGES = {
   drive: "Cruising through traffic",
   close: "Careful, cars ahead",
   bump: "Tiny fender tap. Patience -20",
-  coffee: "Coffee break! Patience restored",
+  coffee: "Patience pack! +25 patience",
   fastLane: "Bonus fast lane!",
   construction: "Construction zone ahead",
   win: "You made it to the picnic stop!",
@@ -29,7 +32,7 @@ function makeInitialState() {
     lane: 1,
     targetLane: 1,
     speed: 1,
-    patience: 100,
+    patience: STARTING_PATIENCE,
     distance: 0,
     status: MESSAGES.ready,
     mode: "playing",
@@ -38,7 +41,7 @@ function makeInitialState() {
     weather: "sunny",
     weatherTimer: 12,
     spawnTimer: 0.8,
-    itemTimer: 5,
+    itemTimer: 3.5,
     constructionTimer: 8,
     roadOffset: 0,
     playerBumpTimer: 0,
@@ -184,7 +187,7 @@ function spawnTraffic() {
 }
 
 function spawnCoffee() {
-  if (Math.random() < 0.78) {
+  if (Math.random() < 0.92) {
     const lane = Math.floor(Math.random() * LANE_COUNT);
     state.items.push({
       id: cryptoRandomId(),
@@ -195,7 +198,7 @@ function spawnCoffee() {
       spin: 0
     });
   }
-  state.itemTimer = randomBetween(8, 13);
+  state.itemTimer = randomBetween(4, 7);
 }
 
 function spawnConstructionZone() {
@@ -243,7 +246,7 @@ function checkItemCollisions() {
 
     item.remove = true;
     if (item.type === "coffee") {
-      state.patience = Math.min(100, state.patience + 15);
+      state.patience = Math.min(MAX_PATIENCE, state.patience + PATIENCE_PACK_RESTORE);
       setTemporaryStatus(MESSAGES.coffee, 1.6);
       queueSound("coffee");
     }
@@ -353,6 +356,7 @@ window.TrafficDash = {
   LANE_COUNT,
   WIN_DISTANCE,
   MAX_SPEED,
+  MAX_PATIENCE,
   state,
   resetGame,
   setMuted,

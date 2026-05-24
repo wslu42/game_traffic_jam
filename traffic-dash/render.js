@@ -1,5 +1,5 @@
 (function () {
-const { GAME_HEIGHT, GAME_WIDTH, LANE_COUNT, MAX_SPEED, state, WIN_DISTANCE } = window.TrafficDash;
+const { GAME_HEIGHT, GAME_WIDTH, LANE_COUNT, MAX_PATIENCE, MAX_SPEED, state, WIN_DISTANCE } = window.TrafficDash;
 const ROAD_WIDTH = GAME_WIDTH * 0.68;
 const ROAD_LEFT = (GAME_WIDTH - ROAD_WIDTH) / 2;
 const LANE_WIDTH = ROAD_WIDTH / LANE_COUNT;
@@ -28,7 +28,7 @@ function createRenderer(canvas) {
 function updateHud(elements) {
   elements.distanceValue.textContent = `${state.distance.toFixed(2)} mi`;
   elements.speedValue.textContent = `${state.speed} / ${MAX_SPEED}`;
-  elements.patienceValue.textContent = `${Math.ceil(state.patience)}`;
+  elements.patienceValue.textContent = `${Math.ceil(state.patience)} / ${MAX_PATIENCE}`;
   elements.statusValue.textContent = state.status;
 
   if (state.mode === "won" || state.mode === "lost") {
@@ -171,18 +171,17 @@ function drawCoffee(context, x, y, spin) {
   context.ellipse(4, 31, 24, 8, 0, 0, Math.PI * 2);
   context.fill();
   context.fillStyle = "#fffdf5";
-  roundRect(context, -18, -18, 36, 42, 8);
+  roundRect(context, -24, -21, 48, 44, 8);
   context.fill();
-  context.strokeStyle = "#8a5a2b";
-  context.lineWidth = 5;
-  context.strokeRect(18, -8, 13, 18);
-  context.fillStyle = "#8a5a2b";
-  context.fillRect(-12, -10, 24, 9);
   context.fillStyle = "#ff7aa8";
-  context.font = "24px sans-serif";
-  context.textAlign = "center";
-  context.textBaseline = "middle";
-  context.fillText("+", 0, 13);
+  roundRect(context, -7, -16, 14, 32, 4);
+  context.fill();
+  roundRect(context, -16, -7, 32, 14, 4);
+  context.fill();
+  context.strokeStyle = "#34c759";
+  context.lineWidth = 4;
+  roundRect(context, -24, -21, 48, 44, 8);
+  context.stroke();
   context.restore();
 }
 
