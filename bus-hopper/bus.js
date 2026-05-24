@@ -1,12 +1,14 @@
 (function () {
 const BUS_COLORS = ["#ffd23f", "#ffc33a", "#ffe066", "#ffb84d"];
 const LANE_Y = [286, 360, 434];
+const MAX_SAFE_GAP = 205;
+const MIN_READABLE_GAP = 95;
 
 function createStartingBuses() {
   return [
     createBus(70, LANE_Y[1], 300, 0, 0),
-    createBus(540, LANE_Y[0], 280, 0, 1),
-    createBus(1000, LANE_Y[1], 300, 0, 2)
+    createBus(505, LANE_Y[1], 300, 0, 1),
+    createBus(940, LANE_Y[0], 320, 0, 2)
   ];
 }
 
@@ -53,12 +55,9 @@ function ensureFutureBuses(buses, farthestX, difficulty) {
   const spawnUntil = farthestX + 860;
 
   while (rightEdge < spawnUntil && buses.length < 8) {
-    const gap = randomBetween(
-      Math.max(145, 185 - difficulty * 4),
-      Math.max(210, 260 - difficulty * 3)
-    );
-    const width = randomBetween(270, 330);
     const lane = chooseNextLane(lastLane);
+    const gap = chooseReachableGap(lastLane, lane, difficulty);
+    const width = chooseBusWidth(lastLane, lane, difficulty);
     const bus = createBus(rightEdge + gap, LANE_Y[lane], width, difficulty, buses.length);
     buses.push(bus);
     lastLane = lane;
@@ -138,8 +137,43 @@ function randomBetween(min, max) {
 }
 
 function chooseNextLane(lastLane) {
-  const options = [0, 1, 2].filter((lane) => lane !== lastLane);
+  const nearbyLane = Math.random() < 0.78
+    ? [lastLane - 1, lastLane + 1].filter((lane) => lane >= 0 && lane < LANE_Y.length)
+    : [0, 1, 2].filter((lane) => lane !== lastLane);
+  const options = nearbyLane.length > 0 ? nearbyLane : [lastLane];
   return options[Math.floor(Math.random() * options.length)];
+}
+
+function chooseReachableGap(fromLane, toLane, difficulty) {
+  const verticalChange = LANE_Y[toLane] - LANE_Y[fromLane];
+  const isUphill = verticalChange < 0;
+  const isBigLaneChange = Math.abs(toLane - fromLane) > 1;
+
+  let maxGap = MAX_SAFE_GAP - difficulty * 2;
+  let minGap = 135;
+
+  if (isUphill) {
+    maxGap -= 45;
+    minGap -= 12;
+  }
+
+  if (isBigLaneChange) {
+    maxGap -= 30;
+  }
+
+  maxGap = Math.max(MIN_READABLE_GAP + 35, maxGap);
+  minGap = Math.max(MIN_READABLE_GAP, Math.min(minGap, maxGap - 25));
+
+  return randomBetween(minGap, maxGap);
+}
+
+function chooseBusWidth(fromLane, toLane, difficulty) {
+  const verticalChange = LANE_Y[toLane] - LANE_Y[fromLane];
+  const isUphill = verticalChange < 0;
+  const baseMin = isUphill ? 330 : 300;
+  const baseMax = isUphill ? 380 : 355;
+  const difficultyTrim = Math.min(28, difficulty * 2);
+  return randomBetween(baseMin - difficultyTrim, baseMax - difficultyTrim);
 }
 
 window.BusHopperBus = {
