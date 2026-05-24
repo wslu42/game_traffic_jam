@@ -6,8 +6,9 @@ const { createPlayer, updatePlayer, drawPlayer } = window.BusHopperPlayer;
 const WIDTH = 960;
 const HEIGHT = 540;
 const GAME_SPEED_SCALE = 1;
-const FINISH_SCORE = 650;
+const FINISH_SCORE = 6500;
 const FINISH_X = FINISH_SCORE * 8;
+const STAR_POINTS = 50;
 const elements = {
   canvas: document.querySelector("#gameCanvas"),
   scoreValue: document.querySelector("#scoreValue"),
@@ -45,10 +46,14 @@ function createGame() {
     buses,
     cameraX: 0,
     score: 0,
+    distanceScore: 0,
+    bonusScore: 0,
     best,
     difficulty: 0,
     birds: [],
     nextBirdX: 900,
+    stars: [],
+    nextStarX: 620,
     particles: [],
     principalX: -180,
     muted: false,
@@ -86,7 +91,7 @@ function update(deltaSeconds) {
   const previousBottom = game.player.y + game.player.height;
   const currentPlatform = game.buses.find((bus) => bus.id === game.player.platformId);
 
-  game.difficulty = Math.min(12, game.score / 450);
+  game.difficulty = Math.min(12, game.distanceScore / 450);
   updateBuses(game.buses, deltaSeconds, game.cameraX, game.difficulty);
   updatePlayer(game.player, deltaSeconds, currentPlatform, game.difficulty);
 
@@ -112,15 +117,20 @@ function update(deltaSeconds) {
   ensureFutureBuses(game.buses, game.cameraX + WIDTH, game.difficulty);
   game.buses = removeOldBuses(game.buses, game.cameraX);
 
-  game.score = Math.max(game.score, Math.floor(game.player.x / 8));
+  game.distanceScore = Math.max(game.distanceScore, Math.floor(game.player.x / 8));
+  game.score = game.distanceScore + game.bonusScore;
   updateBirds(deltaSeconds);
+  updateStars(deltaSeconds);
   updateParticles(deltaSeconds);
   updatePrincipal(deltaSeconds);
   checkBirdCollisions();
+  checkStarCollisions();
 
   if (game.player.y > HEIGHT + 80) {
     endGame("Game Over", "You slipped into traffic. Try another hop!");
   } else if (game.player.x >= FINISH_X) {
+    game.distanceScore = FINISH_SCORE;
+    game.score = game.distanceScore + game.bonusScore;
     makeCelebrationParticles(FINISH_X, 230);
     endGame("You Made It!", "You reached school before the bell finished ringing.", "win");
   }
@@ -151,6 +161,31 @@ function createBird(x) {
   };
 }
 
+function updateStars(deltaSeconds) {
+  while (game.nextStarX < game.cameraX + WIDTH + 520 && game.nextStarX < FINISH_X - 360) {
+    game.stars.push(createStar(game.nextStarX));
+    game.nextStarX += randomBetween(430, 680);
+  }
+
+  for (const star of game.stars) {
+    star.spin += deltaSeconds * 5;
+    star.bob += deltaSeconds * 4;
+  }
+
+  game.stars = game.stars.filter((star) => !star.collected && star.x > game.cameraX - 160);
+}
+
+function createStar(x) {
+  return {
+    x,
+    y: randomBetween(170, 295),
+    radius: 17,
+    spin: Math.random() * Math.PI * 2,
+    bob: Math.random() * Math.PI * 2,
+    collected: false
+  };
+}
+
 function checkBirdCollisions() {
   const playerRect = {
     x: game.player.x + 8,
@@ -171,6 +206,32 @@ function checkBirdCollisions() {
       makeParticles(game.player.x + game.player.width / 2, game.player.y + 18, "#ffe066", 14);
       endGame("Bird Bonk!", "A hallway bird crossed your route. Try a lower hop!");
       return;
+    }
+  }
+}
+
+function checkStarCollisions() {
+  const playerRect = {
+    x: game.player.x + 4,
+    y: game.player.y + 4,
+    width: game.player.width - 8,
+    height: game.player.height - 8
+  };
+
+  for (const star of game.stars) {
+    const starRect = {
+      x: star.x - star.radius,
+      y: star.y - star.radius,
+      width: star.radius * 2,
+      height: star.radius * 2
+    };
+
+    if (rectsOverlap(playerRect, starRect)) {
+      star.collected = true;
+      game.bonusScore += STAR_POINTS;
+      game.score = game.distanceScore + game.bonusScore;
+      makeParticles(star.x, star.y, "#ffd23f", 16);
+      audio.play("star");
     }
   }
 }
@@ -284,6 +345,7 @@ function draw() {
   for (const bus of game.buses) {
     drawBus(context, bus, game.cameraX);
   }
+  drawStars();
   drawBirds();
   drawParticles();
   if (game.lateMode) {
@@ -345,6 +407,17 @@ function drawDifficultyRibbon() {
   context.textAlign = "center";
   context.textBaseline = "middle";
   context.fillText("School rush meter", 130, 32);
+
+  if (game.bonusScore > 0) {
+    context.fillStyle = "rgba(255, 253, 244, 0.92)";
+    roundRect(254, 18, 138, 28, 8);
+    context.fill();
+    context.fillStyle = "#17304b";
+    context.font = "900 14px system-ui, sans-serif";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText(`Stars +${game.bonusScore}`, 323, 32);
+  }
 }
 
 function drawFinishLine() {
@@ -492,6 +565,45 @@ function drawBirds() {
   }
 }
 
+function drawStars() {
+  for (const star of game.stars) {
+    const x = star.x - game.cameraX;
+    const y = star.y + Math.sin(star.bob) * 7;
+
+    context.save();
+    context.translate(x, y);
+    context.rotate(star.spin);
+    context.fillStyle = "rgba(23, 48, 75, 0.16)";
+    context.beginPath();
+    context.ellipse(3, 26, 18, 6, 0, 0, Math.PI * 2);
+    context.fill();
+
+    context.fillStyle = "#ffd23f";
+    context.strokeStyle = "#fffdf4";
+    context.lineWidth = 3;
+    drawStarPath(context, 0, 0, 18, 8, 5);
+    context.fill();
+    context.stroke();
+    context.restore();
+  }
+}
+
+function drawStarPath(context, x, y, outerRadius, innerRadius, points) {
+  context.beginPath();
+  for (let i = 0; i < points * 2; i += 1) {
+    const radius = i % 2 === 0 ? outerRadius : innerRadius;
+    const angle = -Math.PI / 2 + i * Math.PI / points;
+    const px = x + Math.cos(angle) * radius;
+    const py = y + Math.sin(angle) * radius;
+    if (i === 0) {
+      context.moveTo(px, py);
+    } else {
+      context.lineTo(px, py);
+    }
+  }
+  context.closePath();
+}
+
 function drawPrincipal() {
   const x = game.principalX - game.cameraX;
   const y = 262;
@@ -606,7 +718,8 @@ function createAudio() {
       const map = {
         jump: [620, 0.08, "triangle", 0.045],
         gameover: [120, 0.18, "sawtooth", 0.035],
-        win: [820, 0.18, "triangle", 0.05]
+        win: [820, 0.18, "triangle", 0.05],
+        star: [980, 0.08, "triangle", 0.035]
       };
       const sound = map[name];
       if (!sound) return;
