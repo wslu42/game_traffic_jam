@@ -210,6 +210,13 @@ button {
   box-shadow: 0 18px 42px rgba(23, 48, 75, 0.26);
 }
 
+.overlay--win .overlay__panel {
+  border-color: #ffd23f;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 253, 244, 0.96)),
+    linear-gradient(135deg, #fff0b5, #d8f8ff);
+}
+
 .overlay__panel p {
   margin: 8px 0 16px;
   font-weight: 750;

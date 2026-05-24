@@ -121,6 +121,7 @@ function update(deltaSeconds) {
   if (game.player.y > HEIGHT + 80) {
     endGame("Game Over", "You slipped into traffic. Try another hop!");
   } else if (game.player.x >= FINISH_X) {
+    makeCelebrationParticles(FINISH_X, 230);
     endGame("You Made It!", "You reached school before the bell finished ringing.", "win");
   }
 }
@@ -196,6 +197,11 @@ function endGame(title, text, soundName = "gameover") {
   elements.overlayTitle.textContent = title;
   elements.overlayText.textContent = `${text} Score: ${game.score}`;
   elements.playButton.textContent = "Play Again";
+  if (soundName === "win") {
+    elements.overlay.classList.add("overlay--win");
+  } else {
+    elements.overlay.classList.remove("overlay--win");
+  }
   audio.play(soundName);
 }
 
@@ -272,6 +278,7 @@ function updateHud() {
 
 function draw() {
   drawBackground();
+  drawSchoolScene();
   drawTrafficLanes();
   drawFinishLine();
   for (const bus of game.buses) {
@@ -356,14 +363,92 @@ function drawFinishLine() {
     }
   }
 
-  context.fillStyle = "#ff7ba6";
-  roundRect(x - 104, 196, 208, 44, 8);
+  context.fillStyle = "#3478f6";
+  roundRect(x - 104, 193, 208, 44, 8);
   context.fill();
   context.fillStyle = "#ffffff";
   context.font = "900 18px system-ui, sans-serif";
   context.textAlign = "center";
   context.textBaseline = "middle";
-  context.fillText("SCHOOL FINISH", x, 218);
+  context.fillText("WELCOME!", x, 215);
+}
+
+function drawSchoolScene() {
+  const x = FINISH_X - game.cameraX;
+  if (x < -460 || x > WIDTH + 260) return;
+
+  context.fillStyle = "rgba(23, 48, 75, 0.14)";
+  context.beginPath();
+  context.ellipse(x + 165, 358, 245, 24, 0, 0, Math.PI * 2);
+  context.fill();
+
+  context.fillStyle = "#ffcf6e";
+  roundRect(x + 22, 176, 286, 176, 10);
+  context.fill();
+
+  context.fillStyle = "#ffb84d";
+  roundRect(x - 18, 226, 84, 126, 8);
+  context.fill();
+  roundRect(x + 264, 226, 84, 126, 8);
+  context.fill();
+
+  context.fillStyle = "#e65d5d";
+  context.beginPath();
+  context.moveTo(x + 12, 176);
+  context.lineTo(x + 165, 98);
+  context.lineTo(x + 318, 176);
+  context.closePath();
+  context.fill();
+
+  context.fillStyle = "#fffdf4";
+  roundRect(x + 93, 122, 144, 50, 8);
+  context.fill();
+  context.fillStyle = "#17304b";
+  context.font = "900 22px system-ui, sans-serif";
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.fillText("SCHOOL", x + 165, 147);
+
+  context.fillStyle = "#8ee7ff";
+  for (let row = 0; row < 2; row += 1) {
+    for (let col = 0; col < 4; col += 1) {
+      roundRect(x + 84 + col * 45, 202 + row * 44, 28, 26, 5);
+      context.fill();
+    }
+  }
+
+  context.fillStyle = "#734a2a";
+  roundRect(x + 133, 278, 64, 74, 8);
+  context.fill();
+  context.fillStyle = "#ffd23f";
+  context.beginPath();
+  context.arc(x + 184, 315, 4, 0, Math.PI * 2);
+  context.fill();
+
+  context.fillStyle = "#34c759";
+  roundRect(x - 66, 332, 470, 30, 8);
+  context.fill();
+
+  context.strokeStyle = "#17304b";
+  context.lineWidth = 5;
+  context.beginPath();
+  context.moveTo(x + 356, 164);
+  context.lineTo(x + 356, 332);
+  context.stroke();
+  context.fillStyle = "#ff7ba6";
+  context.beginPath();
+  context.moveTo(x + 356, 166);
+  context.lineTo(x + 420, 188);
+  context.lineTo(x + 356, 210);
+  context.closePath();
+  context.fill();
+
+  context.fillStyle = "#fffdf4";
+  roundRect(x + 12, 366, 300, 38, 8);
+  context.fill();
+  context.fillStyle = "#17304b";
+  context.font = "900 18px system-ui, sans-serif";
+  context.fillText("Stage Clear: Made it to school!", x + 162, 385);
 }
 
 function drawBirds() {
@@ -441,6 +526,22 @@ function makeParticles(x, y, color, count) {
       maxLife: 0.7,
       color,
       size: randomBetween(3, 7)
+    });
+  }
+}
+
+function makeCelebrationParticles(x, y) {
+  const colors = ["#ff7ba6", "#ffd23f", "#53c6ff", "#34c759", "#fffdf4"];
+  for (let i = 0; i < 45; i += 1) {
+    game.particles.push({
+      x: x + randomBetween(-120, 120),
+      y: y + randomBetween(-90, 60),
+      velocityX: randomBetween(-190, 190),
+      velocityY: randomBetween(-360, -80),
+      life: randomBetween(0.8, 1.45),
+      maxLife: 1.45,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      size: randomBetween(4, 8)
     });
   }
 }
