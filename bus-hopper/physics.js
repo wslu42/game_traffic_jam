@@ -1,8 +1,8 @@
 (function () {
-const GRAVITY = 2050;
-const JUMP_SPEED = 760;
-const DOUBLE_JUMP_SPEED = 690;
-const TERMINAL_VELOCITY = 1450;
+const GRAVITY = 1150;
+const JUMP_SPEED = 860;
+const DOUBLE_JUMP_SPEED = 780;
+const TERMINAL_VELOCITY = 1250;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
