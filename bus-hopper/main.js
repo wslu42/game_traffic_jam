@@ -549,6 +549,8 @@ function drawBirds() {
     context.ellipse(4, 26, 24, 7, 0, 0, Math.PI * 2);
     context.fill();
 
+    context.scale(-1, 1);
+
     context.fillStyle = "#b82732";
     context.beginPath();
     context.moveTo(-22, 6);
