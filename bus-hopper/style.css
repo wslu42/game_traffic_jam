@@ -250,12 +250,14 @@ button {
 .touch-controls {
   display: grid;
   grid-template-columns: 1fr;
+  padding-top: 6px;
 }
 
 .touch-controls button {
-  min-height: 58px;
+  min-height: clamp(174px, 20svh, 210px);
   background: var(--pink);
-  font-size: 1.2rem;
+  font-size: 1.45rem;
+  letter-spacing: 0;
 }
 
 @media (orientation: landscape) and (max-height: 560px) {
@@ -294,8 +296,10 @@ button {
   }
 
   .touch-controls button {
-    min-height: 86px;
+    min-height: min(220px, calc(100svh - 24px));
     padding: 0 8px;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
   }
 }
 
@@ -318,7 +322,7 @@ button {
   }
 
   #gameCanvas {
-    width: min(100%, calc((100svh - 286px) * 1.7778));
-    max-height: calc(100svh - 286px);
+    width: min(100%, calc((100svh - 420px) * 1.7778));
+    max-height: calc(100svh - 420px);
   }
 }
