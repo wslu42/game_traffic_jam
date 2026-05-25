@@ -165,7 +165,7 @@ function createBird(x) {
 function updateHelmetPickups(deltaSeconds) {
   while (game.nextHelmetX < game.cameraX + WIDTH + 520 && game.nextHelmetX < FINISH_X - 360) {
     game.helmetsOnRoad.push(createHelmetPickup(game.nextHelmetX));
-    game.nextHelmetX += randomBetween(760, 1080);
+    game.nextHelmetX += randomBetween(1520, 2160);
   }
 
   for (const helmet of game.helmetsOnRoad) {
