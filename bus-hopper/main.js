@@ -214,7 +214,7 @@ function checkBirdCollisions() {
         game.helmets -= 1;
         makeParticles(bird.x, bird.y, "#ffb84d", 12);
       } else {
-        endGame("No Helmet!", "You hit a bird without a helmet.");
+        endGame("You Hit a Bird!", "Collect helmets to protect yourself.");
       }
       return;
     }
@@ -539,57 +539,68 @@ function drawBirds() {
   for (const bird of game.birds) {
     if (bird.hit) continue;
     const x = bird.x - game.cameraX;
-    const wing = Math.sin(bird.wingTime) * 9;
+    const wing = Math.sin(bird.wingTime) * 7;
 
     context.save();
     context.translate(x, bird.y);
+    context.rotate(-0.06);
     context.fillStyle = "rgba(23, 48, 75, 0.16)";
     context.beginPath();
     context.ellipse(4, 26, 24, 7, 0, 0, Math.PI * 2);
     context.fill();
 
-    context.fillStyle = "#c92d35";
+    context.fillStyle = "#b82732";
     context.beginPath();
-    context.ellipse(-7, 7, 19, 12, -0.1, 0, Math.PI * 2);
+    context.moveTo(-22, 6);
+    context.lineTo(-44, -5);
+    context.lineTo(-38, 8);
+    context.lineTo(-44, 19);
+    context.closePath();
     context.fill();
 
     context.fillStyle = "#e94343";
     context.beginPath();
-    context.ellipse(13, 1, 12, 11, 0, 0, Math.PI * 2);
+    context.ellipse(-6, 7, 23, 14, -0.08, 0, Math.PI * 2);
     context.fill();
 
-    context.fillStyle = "#a91f2a";
+    context.fillStyle = "#ff5b5f";
     context.beginPath();
-    context.moveTo(-15, 4);
-    context.quadraticCurveTo(-34, -14 - wing, -42, 4);
-    context.quadraticCurveTo(-28, 12, -15, 13);
-    context.closePath();
+    context.arc(18, 0, 12, 0, Math.PI * 2);
     context.fill();
 
-    context.fillStyle = "#b82732";
+    context.fillStyle = "#9d1f2a";
     context.beginPath();
-    context.moveTo(-25, 5);
-    context.lineTo(-44, -5);
-    context.lineTo(-39, 13);
+    context.moveTo(-6, 5);
+    context.quadraticCurveTo(-22, -15 - wing, -32, 4);
+    context.quadraticCurveTo(-20, 17 + wing * 0.25, -4, 13);
     context.closePath();
     context.fill();
 
     context.fillStyle = "#ffb84d";
     context.beginPath();
-    context.moveTo(24, 1);
-    context.lineTo(39, -5);
-    context.lineTo(39, 7);
+    context.moveTo(29, 0);
+    context.lineTo(43, -5);
+    context.lineTo(43, 6);
     context.closePath();
     context.fill();
 
-    context.fillStyle = "#ff6f61";
+    context.strokeStyle = "#5c2b1c";
+    context.lineWidth = 2;
     context.beginPath();
-    context.ellipse(-5, 8, 10, 7, -0.2, 0, Math.PI * 2);
+    context.moveTo(-5, 20);
+    context.lineTo(-9, 27);
+    context.moveTo(4, 19);
+    context.lineTo(2, 27);
+    context.stroke();
+
+    context.beginPath();
+    context.fillStyle = "#17304b";
+    context.arc(21, -3, 2.4, 0, Math.PI * 2);
     context.fill();
 
-    context.fillStyle = "#17304b";
     context.beginPath();
-    context.arc(16, -2, 2.4, 0, Math.PI * 2);
+    context.fillStyle = "#fffdf4";
+    context.arc(22, -4, 0.8, 0, Math.PI * 2);
     context.fill();
     context.restore();
   }
