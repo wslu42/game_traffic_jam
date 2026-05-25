@@ -5,7 +5,7 @@ const LANE_COUNT = 3;
 const WIN_DISTANCE = 10;
 const MAX_SPEED = 5;
 const STARTING_PATIENCE = 100;
-const MAX_PATIENCE = 150;
+const MAX_PATIENCE = 300;
 const PATIENCE_PACK_RESTORE = 25;
 
 const TRAFFIC_TYPES = [
