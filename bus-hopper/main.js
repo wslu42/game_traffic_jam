@@ -8,12 +8,13 @@ const HEIGHT = 540;
 const GAME_SPEED_SCALE = 1;
 const FINISH_SCORE = 6500;
 const FINISH_X = FINISH_SCORE * 8;
-const STAR_POINTS = 50;
+const MAX_HELMETS = 3;
 const elements = {
   canvas: document.querySelector("#gameCanvas"),
   scoreValue: document.querySelector("#scoreValue"),
   bestValue: document.querySelector("#bestValue"),
   modeValue: document.querySelector("#modeValue"),
+  helmetValue: document.querySelector("#helmetValue"),
   modeButton: document.querySelector("#modeButton"),
   muteButton: document.querySelector("#muteButton"),
   restartButton: document.querySelector("#restartButton"),
@@ -47,17 +48,17 @@ function createGame() {
     cameraX: 0,
     score: 0,
     distanceScore: 0,
-    bonusScore: 0,
     best,
     difficulty: 0,
+    helmets: 1,
     birds: [],
     nextBirdX: 900,
-    stars: [],
-    nextStarX: 620,
+    helmetsOnRoad: [],
+    nextHelmetX: 620,
     particles: [],
     principalX: -180,
     muted: false,
-    message: "Jump between buses, dodge birds, and reach school."
+    message: "Jump between buses, collect helmets, and reach school."
   };
 }
 
@@ -118,19 +119,19 @@ function update(deltaSeconds) {
   game.buses = removeOldBuses(game.buses, game.cameraX);
 
   game.distanceScore = Math.max(game.distanceScore, Math.floor(game.player.x / 8));
-  game.score = game.distanceScore + game.bonusScore;
+  game.score = game.distanceScore;
   updateBirds(deltaSeconds);
-  updateStars(deltaSeconds);
+  updateHelmetPickups(deltaSeconds);
   updateParticles(deltaSeconds);
   updatePrincipal(deltaSeconds);
   checkBirdCollisions();
-  checkStarCollisions();
+  checkHelmetCollisions();
 
   if (game.player.y > HEIGHT + 80) {
     endGame("Game Over", "You slipped into traffic. Try another hop!");
   } else if (game.player.x >= FINISH_X) {
     game.distanceScore = FINISH_SCORE;
-    game.score = game.distanceScore + game.bonusScore;
+    game.score = game.distanceScore;
     makeCelebrationParticles(FINISH_X, 230);
     endGame("You Made It!", "You reached school before the bell finished ringing.", "win");
   }
@@ -161,25 +162,26 @@ function createBird(x) {
   };
 }
 
-function updateStars(deltaSeconds) {
-  while (game.nextStarX < game.cameraX + WIDTH + 520 && game.nextStarX < FINISH_X - 360) {
-    game.stars.push(createStar(game.nextStarX));
-    game.nextStarX += randomBetween(430, 680);
+function updateHelmetPickups(deltaSeconds) {
+  while (game.nextHelmetX < game.cameraX + WIDTH + 520 && game.nextHelmetX < FINISH_X - 360) {
+    game.helmetsOnRoad.push(createHelmetPickup(game.nextHelmetX));
+    game.nextHelmetX += randomBetween(760, 1080);
   }
 
-  for (const star of game.stars) {
-    star.spin += deltaSeconds * 5;
-    star.bob += deltaSeconds * 4;
+  for (const helmet of game.helmetsOnRoad) {
+    helmet.spin += deltaSeconds * 3.4;
+    helmet.bob += deltaSeconds * 4;
   }
 
-  game.stars = game.stars.filter((star) => !star.collected && star.x > game.cameraX - 160);
+  game.helmetsOnRoad = game.helmetsOnRoad.filter((helmet) => !helmet.collected && helmet.x > game.cameraX - 160);
 }
 
-function createStar(x) {
+function createHelmetPickup(x) {
   return {
     x,
-    y: randomBetween(170, 295),
-    radius: 17,
+    y: randomBetween(188, 300),
+    width: 42,
+    height: 34,
     spin: Math.random() * Math.PI * 2,
     bob: Math.random() * Math.PI * 2,
     collected: false
@@ -195,6 +197,7 @@ function checkBirdCollisions() {
   };
 
   for (const bird of game.birds) {
+    if (bird.hit) continue;
     const birdRect = {
       x: bird.x - bird.width / 2,
       y: bird.y - bird.height / 2,
@@ -203,14 +206,22 @@ function checkBirdCollisions() {
     };
 
     if (rectsOverlap(playerRect, birdRect)) {
-      makeParticles(game.player.x + game.player.width / 2, game.player.y + 18, "#ffe066", 14);
-      endGame("Bird Bonk!", "A hallway bird crossed your route. Try a lower hop!");
+      bird.hit = true;
+      bird.width = 0;
+      bird.height = 0;
+      makeParticles(game.player.x + game.player.width / 2, game.player.y + 18, "#e94343", 14);
+      if (game.helmets > 0) {
+        game.helmets -= 1;
+        makeParticles(bird.x, bird.y, "#ffb84d", 12);
+      } else {
+        endGame("No Helmet!", "You hit a bird without a helmet.");
+      }
       return;
     }
   }
 }
 
-function checkStarCollisions() {
+function checkHelmetCollisions() {
   const playerRect = {
     x: game.player.x + 4,
     y: game.player.y + 4,
@@ -218,20 +229,19 @@ function checkStarCollisions() {
     height: game.player.height - 8
   };
 
-  for (const star of game.stars) {
-    const starRect = {
-      x: star.x - star.radius,
-      y: star.y - star.radius,
-      width: star.radius * 2,
-      height: star.radius * 2
+  for (const helmet of game.helmetsOnRoad) {
+    const helmetRect = {
+      x: helmet.x - helmet.width / 2,
+      y: helmet.y - helmet.height / 2,
+      width: helmet.width,
+      height: helmet.height
     };
 
-    if (rectsOverlap(playerRect, starRect)) {
-      star.collected = true;
-      game.bonusScore += STAR_POINTS;
-      game.score = game.distanceScore + game.bonusScore;
-      makeParticles(star.x, star.y, "#ffd23f", 16);
-      audio.play("star");
+    if (rectsOverlap(playerRect, helmetRect)) {
+      helmet.collected = true;
+      game.helmets = Math.min(MAX_HELMETS, game.helmets + 1);
+      makeParticles(helmet.x, helmet.y, "#3478f6", 16);
+      audio.play("helmet");
     }
   }
 }
@@ -335,6 +345,7 @@ function updateHud() {
   elements.scoreValue.textContent = String(game.score);
   elements.bestValue.textContent = String(game.best);
   elements.modeValue.textContent = game.lateMode ? "Late" : "Normal";
+  elements.helmetValue.textContent = `${game.helmets} / ${MAX_HELMETS}`;
 }
 
 function draw() {
@@ -345,7 +356,7 @@ function draw() {
   for (const bus of game.buses) {
     drawBus(context, bus, game.cameraX);
   }
-  drawStars();
+  drawHelmetPickups();
   drawBirds();
   drawParticles();
   if (game.lateMode) {
@@ -408,7 +419,7 @@ function drawDifficultyRibbon() {
   context.textBaseline = "middle";
   context.fillText("School rush meter", 130, 32);
 
-  if (game.bonusScore > 0) {
+  if (game.helmets >= MAX_HELMETS) {
     context.fillStyle = "rgba(255, 253, 244, 0.92)";
     roundRect(254, 18, 138, 28, 8);
     context.fill();
@@ -416,7 +427,7 @@ function drawDifficultyRibbon() {
     context.font = "900 14px system-ui, sans-serif";
     context.textAlign = "center";
     context.textBaseline = "middle";
-    context.fillText(`Stars +${game.bonusScore}`, 323, 32);
+    context.fillText("Helmet full", 323, 32);
   }
 }
 
@@ -526,6 +537,7 @@ function drawSchoolScene() {
 
 function drawBirds() {
   for (const bird of game.birds) {
+    if (bird.hit) continue;
     const x = bird.x - game.cameraX;
     const wing = Math.sin(bird.wingTime) * 9;
 
@@ -536,72 +548,88 @@ function drawBirds() {
     context.ellipse(4, 26, 24, 7, 0, 0, Math.PI * 2);
     context.fill();
 
-    context.strokeStyle = "#17304b";
-    context.lineWidth = 5;
-    context.lineCap = "round";
+    context.fillStyle = "#c92d35";
     context.beginPath();
-    context.moveTo(-6, 1);
-    context.quadraticCurveTo(-22, -18 - wing, -38, -2);
-    context.moveTo(6, 1);
-    context.quadraticCurveTo(22, -18 + wing, 38, -2);
-    context.stroke();
-
-    context.fillStyle = "#ffe066";
-    context.beginPath();
-    context.ellipse(0, 4, 18, 12, 0, 0, Math.PI * 2);
+    context.ellipse(-7, 7, 19, 12, -0.1, 0, Math.PI * 2);
     context.fill();
-    context.fillStyle = "#ff8f3d";
+
+    context.fillStyle = "#e94343";
     context.beginPath();
-    context.moveTo(-20, 2);
-    context.lineTo(-34, -4);
-    context.lineTo(-34, 8);
+    context.ellipse(13, 1, 12, 11, 0, 0, Math.PI * 2);
+    context.fill();
+
+    context.fillStyle = "#a91f2a";
+    context.beginPath();
+    context.moveTo(-15, 4);
+    context.quadraticCurveTo(-34, -14 - wing, -42, 4);
+    context.quadraticCurveTo(-28, 12, -15, 13);
     context.closePath();
     context.fill();
+
+    context.fillStyle = "#b82732";
+    context.beginPath();
+    context.moveTo(-25, 5);
+    context.lineTo(-44, -5);
+    context.lineTo(-39, 13);
+    context.closePath();
+    context.fill();
+
+    context.fillStyle = "#ffb84d";
+    context.beginPath();
+    context.moveTo(24, 1);
+    context.lineTo(39, -5);
+    context.lineTo(39, 7);
+    context.closePath();
+    context.fill();
+
+    context.fillStyle = "#ff6f61";
+    context.beginPath();
+    context.ellipse(-5, 8, 10, 7, -0.2, 0, Math.PI * 2);
+    context.fill();
+
     context.fillStyle = "#17304b";
     context.beginPath();
-    context.arc(8, 0, 2.5, 0, Math.PI * 2);
+    context.arc(16, -2, 2.4, 0, Math.PI * 2);
     context.fill();
     context.restore();
   }
 }
 
-function drawStars() {
-  for (const star of game.stars) {
-    const x = star.x - game.cameraX;
-    const y = star.y + Math.sin(star.bob) * 7;
+function drawHelmetPickups() {
+  for (const helmet of game.helmetsOnRoad) {
+    const x = helmet.x - game.cameraX;
+    const y = helmet.y + Math.sin(helmet.bob) * 7;
 
     context.save();
     context.translate(x, y);
-    context.rotate(star.spin);
+    context.rotate(Math.sin(helmet.spin) * 0.08);
     context.fillStyle = "rgba(23, 48, 75, 0.16)";
     context.beginPath();
-    context.ellipse(3, 26, 18, 6, 0, 0, Math.PI * 2);
+    context.ellipse(3, 25, 22, 6, 0, 0, Math.PI * 2);
     context.fill();
 
-    context.fillStyle = "#ffd23f";
+    context.fillStyle = "#3478f6";
     context.strokeStyle = "#fffdf4";
-    context.lineWidth = 3;
-    drawStarPath(context, 0, 0, 18, 8, 5);
+    context.lineWidth = 4;
+    context.beginPath();
+    context.arc(0, 2, 21, Math.PI, Math.PI * 2);
+    context.lineTo(22, 7);
+    context.quadraticCurveTo(0, 23, -22, 7);
+    context.closePath();
     context.fill();
     context.stroke();
+
+    context.fillStyle = "#8ee7ff";
+    roundRect(-15, 3, 30, 9, 4);
+    context.fill();
+
+    context.fillStyle = "#17304b";
+    context.font = "900 14px system-ui, sans-serif";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText("+", 0, 3);
     context.restore();
   }
-}
-
-function drawStarPath(context, x, y, outerRadius, innerRadius, points) {
-  context.beginPath();
-  for (let i = 0; i < points * 2; i += 1) {
-    const radius = i % 2 === 0 ? outerRadius : innerRadius;
-    const angle = -Math.PI / 2 + i * Math.PI / points;
-    const px = x + Math.cos(angle) * radius;
-    const py = y + Math.sin(angle) * radius;
-    if (i === 0) {
-      context.moveTo(px, py);
-    } else {
-      context.lineTo(px, py);
-    }
-  }
-  context.closePath();
 }
 
 function drawPrincipal() {
@@ -719,7 +747,7 @@ function createAudio() {
         jump: [620, 0.08, "triangle", 0.045],
         gameover: [120, 0.18, "sawtooth", 0.035],
         win: [820, 0.18, "triangle", 0.05],
-        star: [980, 0.08, "triangle", 0.035]
+        helmet: [980, 0.08, "triangle", 0.035]
       };
       const sound = map[name];
       if (!sound) return;
