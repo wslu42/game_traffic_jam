@@ -1,0 +1,25 @@
+name: Spelling Sprint check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "spelling-sprint/**"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run regression tests
+        run: node --test spelling-sprint/main.test.cjs
+      - name: Check whitespace
+        run: git diff --check HEAD^ HEAD
