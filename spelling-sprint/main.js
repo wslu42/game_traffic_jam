@@ -2,7 +2,12 @@
   'use strict';
   const WORDS = Array.isArray(window.SPELLING_WORDS) ? window.SPELLING_WORDS
     .filter((entry) => entry && typeof entry.word === 'string' && entry.word.trim() && entry.word.trim().length <= 24)
-    .map((entry) => ({ word: entry.word.trim().toLowerCase(), sentence: typeof entry.sentence === 'string' ? entry.sentence.trim() : '' }))
+    .map((entry) => ({
+      word: entry.word.trim().toLowerCase(),
+      sentence: typeof entry.sentence === 'string' ? entry.sentence.trim() : '',
+      audio: typeof entry.audio === 'string' ? entry.audio.trim() : '',
+      sentenceAudio: typeof entry.sentenceAudio === 'string' ? entry.sentenceAudio.trim() : '',
+    }))
     .filter((entry, index, entries) => entries.findIndex((other) => other.word === entry.word) === index) : [];
   const RACE_DISTANCE = 2000;
   const TRACK_SCALE = 1.3;
@@ -11,10 +16,10 @@
   const canvas = $('race');
   const ctx = canvas.getContext('2d');
   const scooterSheet = new Image();
-  scooterSheet.src = './scooter-sprites.png?v=1.4.2';
+  scooterSheet.src = './scooter-sprites.png?v=1.5.0';
   const greenSheet = new Image(), yellowSheet = new Image();
-  greenSheet.src = './scooter-green.png?v=1.4.2';
-  yellowSheet.src = './scooter-yellow.png?v=1.4.2';
+  greenSheet.src = './scooter-green.png?v=1.5.0';
+  yellowSheet.src = './scooter-yellow.png?v=1.5.0';
   // Normalized wheel-midpoint anchors keep the generated poses on the same ground.
   const poses = [
     { sx: 0, sy: 0, ax: 313, ay: 589 },
@@ -24,6 +29,24 @@
   ];
   const synth = window.speechSynthesis;
   const speechAvailable = Boolean(synth && window.SpeechSynthesisUtterance);
+  const mediaAvailable = typeof Audio === 'function';
+  const audioCache = new Map();
+  let currentAudio = null;
+  function cachedAudio(source) {
+    if (!mediaAvailable || !source) return null;
+    if (!audioCache.has(source)) {
+      const audio = new Audio(`${source}?v=1.5.0`);
+      audio.preload = 'auto';
+      if (typeof audio.load === 'function') audio.load();
+      audioCache.set(source, audio);
+    }
+    return audioCache.get(source);
+  }
+  WORDS.forEach((entry) => {
+    cachedAudio(entry.audio);
+    cachedAudio(entry.sentenceAudio);
+  });
+  const fixedAudioAvailable = mediaAvailable && WORDS.some((entry) => entry.audio);
   let saved = null;
   function validRace(data) {
     return Boolean(data && Number.isFinite(data.time) && data.time > 0 &&
@@ -58,28 +81,84 @@
   chooseVoice();
   if (synth) synth.addEventListener('voiceschanged', chooseVoice);
 
-  function speak(text) {
-    if (!speechAvailable) return;
-    const version = ++speechVersion;
-    synth.cancel();
+  function failSpeech(version) {
+    if (version !== speechVersion) return;
+    speechFailed = true;
+    if (state === 'racing') {
+      state = 'audio-error';
+      setInputEnabled(false);
+      $('start').textContent = '重新開始';
+      $('feedback').textContent = '發音無法播放，請確認裝置音量後重試。';
+      $('banner').textContent = '';
+    }
+  }
+
+  function stopSpeech() {
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+      currentAudio = null;
+    }
+    if (synth) synth.cancel();
+  }
+
+  function browserSpeak(text, version) {
+    if (!speechAvailable) {
+      failSpeech(version);
+      return;
+    }
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-US';
     utterance.rate = 0.82;
     if (voice) utterance.voice = voice;
     utterance.onerror = (event) => {
-      if (version !== speechVersion) return;
-      if (!['canceled', 'interrupted'].includes(event.error)) {
-        speechFailed = true;
-        if (state === 'racing') {
-          state = 'audio-error';
-          setInputEnabled(false);
-          $('start').textContent = '重新開始';
-          $('feedback').textContent = '發音無法播放，請確認裝置的英文語音與音量後重試。';
-          $('banner').textContent = '';
-        }
-      }
+      if (!['canceled', 'interrupted'].includes(event.error)) failSpeech(version);
     };
     synth.speak(utterance);
+  }
+
+  function primeFixedAudio() {
+    for (const audio of audioCache.values()) {
+      const muted = audio.muted;
+      audio.muted = true;
+      const attempt = audio.play();
+      if (attempt && typeof attempt.then === 'function') {
+        attempt.then(() => {
+          audio.pause();
+          audio.currentTime = 0;
+          audio.muted = muted;
+        }).catch(() => { audio.muted = muted; });
+      } else {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.muted = muted;
+      }
+    }
+  }
+
+  function speak(text, source = '') {
+    const version = ++speechVersion;
+    stopSpeech();
+    const audio = cachedAudio(source);
+    if (!audio) {
+      browserSpeak(text, version);
+      return;
+    }
+    currentAudio = audio;
+    audio.currentTime = 0;
+    let fallbackUsed = false;
+    const fallback = () => {
+      if (fallbackUsed || version !== speechVersion) return;
+      fallbackUsed = true;
+      if (currentAudio === audio) currentAudio = null;
+      browserSpeak(text, version);
+    };
+    audio.onended = () => {
+      if (version === speechVersion && currentAudio === audio) currentAudio = null;
+    };
+    audio.onerror = fallback;
+    const attempt = audio.play();
+    if (attempt && typeof attempt.catch === 'function') attempt.catch(fallback);
   }
 
   function setInputEnabled(enabled) {
@@ -107,7 +186,7 @@
     $('answer').removeAttribute('aria-invalid');
     setInputEnabled(true);
     $('answer').focus({ preventScroll: true });
-    speak(current.word);
+    speak(current.word, current.audio);
   }
 
   function start() {
@@ -116,9 +195,9 @@
       return;
     }
     speechVersion++;
-    if (synth) synth.cancel();
-    if (!speechAvailable) {
-      $('feedback').textContent = '此瀏覽器不支援英文發音，請改用支援語音的瀏覽器。';
+    stopSpeech();
+    if (!fixedAudioAvailable && !speechAvailable) {
+      $('feedback').textContent = '此瀏覽器無法播放英文發音。';
       return;
     }
     state = 'countdown'; elapsed = 0; distance = 0; speed = 15; boost = 0;
@@ -141,14 +220,14 @@
     $('answer').focus({ preventScroll: true });
     ['submit', 'replay', 'sentence'].forEach((id) => { $(id).disabled = true; });
     chooseVoice();
-    speak('Ready.');
+    primeFixedAudio();
     updateHud();
   }
 
   function finish() {
     state = 'finished';
     speechVersion++;
-    if (synth) synth.cancel();
+    stopSpeech();
     setInputEnabled(false);
     $('answer').blur();
     trace.push({ time: elapsed, distance: RACE_DISTANCE });
@@ -163,7 +242,8 @@
       const button = document.createElement('button');
       button.type = 'button'; button.textContent = word;
       button.title = `播放 ${word}`;
-      button.addEventListener('click', () => speak(word));
+      const entry = WORDS.find((item) => item.word === word);
+      button.addEventListener('click', () => speak(word, entry?.audio));
       $('review').append(button);
     });
     if (!missed.size) $('review').textContent = attempts ? '沒有錯字' : '尚未作答';
@@ -179,8 +259,11 @@
   }
 
   $('start').addEventListener('click', start);
-  $('replay').addEventListener('click', () => { if (state === 'racing' && current) { speak(current.word); $('answer').focus({ preventScroll: true }); } });
-  $('sentence').addEventListener('click', () => { if (state === 'racing' && current) { speak(`${current.word}. ${current.sentence}`); $('answer').focus({ preventScroll: true }); } });
+  ['submit', 'replay', 'sentence'].forEach((id) => {
+    $(id).addEventListener('pointerdown', (event) => event.preventDefault());
+  });
+  $('replay').addEventListener('click', () => { if (state === 'racing' && current) { speak(current.word, current.audio); $('answer').focus({ preventScroll: true }); } });
+  $('sentence').addEventListener('click', () => { if (state === 'racing' && current) { speak(`${current.word}. ${current.sentence}`, current.sentenceAudio); $('answer').focus({ preventScroll: true }); } });
   $('answer-form').addEventListener('submit', (event) => {
     event.preventDefault();
     if (state !== 'racing' || advanceAt || distance >= RACE_DISTANCE || document.hidden) return;
@@ -204,6 +287,7 @@
       advanceAt = elapsed + 0.45;
     }
     feedbackUntil = elapsed + 2;
+    $('answer').focus({ preventScroll: true });
     updateHud();
   });
 
@@ -316,8 +400,8 @@
 
   document.addEventListener('visibilitychange', () => {
     previous = performance.now();
-    if (document.hidden && synth) synth.cancel();
-    if (!document.hidden && state === 'racing' && current && !advanceAt) speak(current.word);
+    if (document.hidden) stopSpeech();
+    if (!document.hidden && state === 'racing' && current && !advanceAt) speak(current.word, current.audio);
   });
 
   function frame(now) {
@@ -362,6 +446,6 @@
     draw(now);
     requestAnimationFrame(frame);
   }
-  if (!speechAvailable) $('feedback').textContent = '此瀏覽器不支援英文發音。';
+  if (!fixedAudioAvailable && !speechAvailable) $('feedback').textContent = '此瀏覽器無法播放英文發音。';
   requestAnimationFrame(frame);
 })();

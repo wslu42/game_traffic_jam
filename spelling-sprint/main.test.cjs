@@ -30,9 +30,9 @@ test('independent word bank supports additions, optional sentences and a single-
   }
 });
 
-function game({ storage = JSON.stringify({ best: 2000 / 27, ...record(24), previous: record(27) }), supported = true, storageFails = false, reducedMotion = false, spriteFails = false, words = wordScope.window.SPELLING_WORDS } = {}) {
+function game({ storage = JSON.stringify({ best: 2000 / 27, ...record(24), previous: record(27) }), supported = true, storageFails = false, reducedMotion = false, spriteFails = false, audioFails = false, words = wordScope.window.SPELLING_WORDS } = {}) {
   let now = 0, frame;
-  const nodes = new Map(), utterances = [];
+  const nodes = new Map(), utterances = [], audioPlays = [], audioLoads = [];
   let rendered = { cars: [], stripes: [], checks: [], labels: [], sprites: [] };
   const drawing = new Proxy({}, {
     get: (target, method) => (...args) => {
@@ -68,19 +68,37 @@ function game({ storage = JSON.stringify({ best: 2000 / 27, ...record(24), previ
     setItem(key, value) { if (storageFails) throw new Error('blocked'); storage = value; },
   };
   class Utterance { constructor(text) { this.text = text; } }
+  class AudioMock {
+    constructor(src) { this.src = src; this.currentTime = 0; this.muted = false; this.preload = ''; }
+    load() { audioLoads.push(this.src); }
+    pause() {}
+    play() {
+      audioPlays.push(this.src);
+      const chain = {
+        then(fn) { if (!audioFails) fn(); return chain; },
+        catch(fn) { if (audioFails) fn(new Error('audio failed')); return chain; },
+      };
+      return chain;
+    }
+  }
   vm.runInNewContext(source, {
     document, window: { SPELLING_WORDS: words, ...(supported ? { speechSynthesis: synth, SpeechSynthesisUtterance: Utterance } : {}) },
     Image: class { complete = true; naturalWidth = spriteFails ? 0 : 1254; },
+    Audio: AudioMock,
     SpeechSynthesisUtterance: Utterance, localStorage, performance: { now: () => now },
     matchMedia: () => ({ matches: reducedMotion }), requestAnimationFrame(fn) { frame = fn; },
   });
   return {
-    node, document, utterances, saved: () => JSON.parse(storage),
+    node, document, utterances, audioPlays, audioLoads, saved: () => JSON.parse(storage),
     start() { node('start').listeners.click(); },
     tick(seconds) { for (let i = 0; i < Math.round(seconds * 100); i++) stepFrame(10); },
     render: () => rendered,
     submit(value) { node('answer').value = value; node('answer-form').listeners.submit({ preventDefault() {} }); },
-    word() { return utterances.at(-1).text; },
+    word() {
+      const source = audioPlays.at(-1);
+      if (source && /\/Audio\//.test(source)) return source.split('/').at(-1).split('?')[0].replace(/-sentence\.mp3$|\.mp3$/, '');
+      return utterances.at(-1)?.text;
+    },
   };
 }
 
@@ -253,9 +271,9 @@ test('backgrounding pauses the clock and resumes pronunciation', () => {
   const time = g.node('time').innerHTML;
   g.document.hidden = true; g.document.listeners.visibilitychange(); g.tick(20);
   assert.equal(g.node('time').innerHTML, time);
-  const count = g.utterances.length;
+  const count = g.audioPlays.length;
   g.document.hidden = false; g.document.listeners.visibilitychange();
-  assert.equal(g.utterances.length, count + 1);
+  assert.equal(g.audioPlays.length, count + 1);
 });
 
 test('fast player wins before opponents, exact finish time persists and ghost replays', () => {
@@ -275,16 +293,20 @@ test('fast player wins before opponents, exact finish time persists and ghost re
   assert.equal(replay.node('opponent-state').textContent, '已完賽');
 });
 
-test('missing speech and synthesis failures do not run an unanswerable race', () => {
-  const unsupported = game({ supported: false }); unsupported.start(); unsupported.tick(70);
-  assert.match(unsupported.node('feedback').textContent, /不支援/);
-  const g = game(); g.start(); g.tick(3.01);
-  g.utterances.at(-1).onerror({ error: 'synthesis-failed' }); g.tick(70);
-  assert.equal(g.node('answer').disabled, true);
-  assert.match(g.node('feedback').textContent, /無法播放/);
-  const old = g.utterances.at(-1); g.start(); g.tick(3.01);
-  old.onerror({ error: 'synthesis-failed' });
-  assert.equal(g.node('answer').disabled, false);
+test('fixed audio works without speech synthesis and failed audio still has a guarded fallback', () => {
+  const fixed = game({ supported: false }); fixed.start(); fixed.tick(3.01);
+  assert.equal(fixed.node('answer').disabled, false);
+  assert.ok(fixed.audioPlays.at(-1).includes('.mp3?v=1.5.0'));
+
+  const noAudio = game({ supported: false, words: [{ word: 'plain' }] }); noAudio.start(); noAudio.tick(70);
+  assert.match(noAudio.node('feedback').textContent, /無法播放/);
+  assert.equal(noAudio.node('answer').disabled, true);
+
+  const failed = game({ audioFails: true }); failed.start(); failed.tick(3.01);
+  assert.ok(failed.utterances.length);
+  failed.utterances.at(-1).onerror({ error: 'synthesis-failed' }); failed.tick(70);
+  assert.equal(failed.node('answer').disabled, true);
+  assert.match(failed.node('feedback').textContent, /無法播放/);
 });
 
 test('unavailable or corrupt storage does not prevent completing a race', () => {
@@ -323,4 +345,26 @@ test('a legacy single race loads without inventing a second opponent; corrupt ol
     assert.equal(g.render().cars.length, 2);
     assert.equal(g.node('challenger-state').textContent, '無紀錄');
   }
+});
+
+
+test('fixed word and sentence audio are preloaded before the race', () => {
+  const g = game();
+  assert.equal(g.audioLoads.length, 14);
+  assert.ok(g.audioLoads.every((source) => /\.mp3\?v=1\.5\.0$/.test(source)));
+});
+
+test('mobile controls keep answer focus while replaying and submitting', () => {
+  const g = game(); let focuses = 0;
+  g.node('answer').focus = () => { focuses++; };
+  let prevented = 0;
+  g.start(); g.tick(3.01);
+  const beforeReplay = focuses;
+  g.node('replay').listeners.pointerdown({ preventDefault() { prevented++; } });
+  g.node('replay').listeners.click();
+  assert.equal(prevented, 1);
+  assert.ok(focuses > beforeReplay);
+  const beforeSubmit = focuses;
+  g.submit(g.word());
+  assert.ok(focuses > beforeSubmit);
 });
