@@ -57,7 +57,13 @@ function game({ storage = JSON.stringify({ best: 2000 / 27, ...record(24), previ
       removeAttribute(key) { delete this.attributes[key]; },
       focus() {}, blur() {}, select() {},
       replaceChildren() { this.children = []; this.textContent = ''; },
-      append(child) { this.children.push(child); }, getContext() { return drawing; },
+      append(child) { this.children.push(child); },
+      insertBefore(child, reference) {
+        const index = this.children.indexOf(reference);
+        if (index < 0) this.children.push(child);
+        else this.children.splice(index, 0, child);
+      },
+      getContext() { return drawing; },
     });
     return nodes.get(id);
   }
@@ -460,7 +466,8 @@ test('letter pad uses pill corners, equal button sizes, and lighter absent-lette
 test('submit control lives in the letter pad beside backspace and remains associated with the answer form', () => {
   const html = require('node:fs').readFileSync(require('node:path').join(__dirname, 'index.html'), 'utf8');
   assert.match(html, /<div id="letter-pad"[^>]*>\s*<button id="submit"[^>]*form="answer-form"/s);
-  assert.doesNotMatch(html, /<form id="answer-form"[\s\S]*?<button id="submit"/);
+  const answerForm = html.match(/<form id="answer-form"[\s\S]*?<\/form>/)?.[0] || '';
+  assert.doesNotMatch(answerForm, /id="submit"/);
   const g = game();
   const pad = g.node('letter-pad');
   assert.equal(pad.children.at(-2).attributes['aria-label'], '刪除最後一個字母');
