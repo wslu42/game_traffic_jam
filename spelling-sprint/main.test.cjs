@@ -91,11 +91,11 @@ test('all seven words appear once per round; normalization, retry, and three-ans
   }
   assert.deepEqual(words.slice().sort(), ['always', 'first', 'laugh', 'please', 'their', 'these', 'very']);
   assert.notEqual(g.word(), words.at(-1));
-  g.tick(70);
+  g.tick(350);
   assert.equal(g.node('results').hidden, false);
   assert.match(g.node('result-stats').textContent, /88%/);
   assert.equal(g.node('review').children[0].textContent, words[0]);
-  assert.equal(g.saved().trace.at(-1).distance, 1000);
+  assert.equal(g.saved().trace.at(-1).distance, 5000);
   assert.ok(g.saved().trace.every((n, i, a) => !i || n.distance >= a[i - 1].distance));
 });
 
@@ -146,8 +146,8 @@ test('fast answers move the player forward and let trailing opponents leave the 
 });
 
 test('a faster last-run opponent exits ahead with a distance marker', () => {
-  const trace = Array.from({ length: 11 }, (_, i) => ({ time: i, distance: i * 100 }));
-  const g = game({ storage: JSON.stringify({ best: 10, time: 10, trace }) });
+  const trace = Array.from({ length: 51 }, (_, i) => ({ time: i, distance: i * 100 }));
+  const g = game({ storage: JSON.stringify({ best: 50, time: 50, trace }) });
   g.start(); g.tick(3.01); g.tick(9);
   assert.ok(g.render().cars[0] > 1245);
   assert.ok(g.render().labels.some(([label]) => /^> \d+ m$/.test(label)));
@@ -168,7 +168,7 @@ test('camera acceleration never reverses road movement', () => {
 test('fixed finish line scrolls with road markings and crossing ends the race', () => {
   const g = game(); g.start(); g.tick(3.01);
   assert.equal(g.render().checks.length, 0);
-  g.tick(40);
+  g.tick(300);
   assert.equal(g.render().checks.length, 48);
   assert.equal(new Set(g.render().checks.map((square) => square.color)).size, 2);
   const approaching = g.render().checks[0].x;
@@ -177,7 +177,7 @@ test('fixed finish line scrolls with road markings and crossing ends the race', 
   g.tick(.1);
   assert.ok(g.render().checks[0].x < approaching);
   assert.ok(Math.abs((g.render().checks[0].x - approaching) - (g.render().stripes[0] - stripe)) < 1e-8);
-  g.tick(27);
+  g.tick(33.3);
   const finalScore = g.node('distance').innerHTML;
   const lineAtFinish = g.render().checks[0].x;
   g.tick(1);
@@ -188,11 +188,11 @@ test('fixed finish line scrolls with road markings and crossing ends the race', 
   assert.equal(g.render().checks.length, 0);
 });
 
-test('reduced motion keeps player and road still and finishes at 1000 meters', () => {
+test('reduced motion keeps player and road still and finishes at 5000 meters', () => {
   const g = game({ reducedMotion: true }); g.start(); g.tick(3.01);
   g.submit(g.word()); g.tick(1);
   assert.equal(g.render().cars[2], 320);
-  g.tick(70);
+  g.tick(350);
   assert.equal(g.node('results').hidden, false);
   const scene = g.render();
   g.tick(1);
@@ -201,18 +201,18 @@ test('reduced motion keeps player and road still and finishes at 1000 meters', (
 });
 
 test('opponents finish independently; player crossing ends input and restart uses last race', () => {
-  const g = game(); g.start(); g.tick(3.01); g.tick(42);
+  const g = game(); g.start(); g.tick(3.01); g.tick(300);
   assert.equal(g.node('answer').disabled, false);
   assert.equal(g.node('results').hidden, true);
   assert.ok(g.render().labels.some(([label]) => label === 'FINISHED'));
   const opponentX = g.render().cars[1], lineX = g.render().checks[0].x;
   assert.ok(Math.abs(opponentX - lineX) < 1e-8);
-  g.tick(18.1);
+  g.tick(30);
   assert.equal(g.node('results').hidden, true);
-  g.tick(7);
+  g.tick(4);
   assert.equal(g.node('answer').disabled, true);
   assert.match(g.node('result-title').textContent, /第 3 名/);
-  assert.equal(g.node('distance').innerHTML, '1000<span>m</span>');
+  assert.equal(g.node('distance').innerHTML, '5000<span>m</span>');
   const last = g.saved(); g.submit('these'); assert.equal(g.node('correct').textContent, 0);
   g.start(); assert.equal(g.node('results').hidden, true);
   assert.match(g.node('opponent').innerHTML, /上次的你/);
@@ -233,11 +233,11 @@ test('backgrounding pauses the clock and resumes pronunciation', () => {
 
 test('fast player wins before opponents, exact finish time persists and ghost replays', () => {
   const g = game(); g.start(); g.tick(3.01);
-  for (let i = 0; i < 30 && !g.node('answer').disabled; i++) { g.submit(g.word()); g.tick(.5); }
+  for (let i = 0; i < 100 && !g.node('answer').disabled; i++) { g.submit(g.word()); g.tick(.5); }
   assert.equal(g.node('results').hidden, false);
   assert.match(g.node('result-title').textContent, /第 1 名/);
   const record = g.saved();
-  assert.ok(record.time < 1000 / 27);
+  assert.ok(record.time < 5000 / 27);
   assert.equal(record.best, record.time);
   assert.equal(record.trace.at(-1).time, record.time);
   const replay = game({ storage: JSON.stringify(record) }); replay.start(); replay.tick(3.01);
@@ -261,7 +261,7 @@ test('missing speech and synthesis failures do not run an unanswerable race', ()
 
 test('unavailable or corrupt storage does not prevent completing a race', () => {
   for (const options of [{ storageFails: true }, { storage: '{bad' }, { storage: JSON.stringify({ best: 3, trace: [0, -1] }) }]) {
-    const g = game(options); g.start(); g.tick(3.01); g.tick(70);
+    const g = game(options); g.start(); g.tick(3.01); g.tick(350);
     assert.equal(g.node('results').hidden, false);
   }
 });

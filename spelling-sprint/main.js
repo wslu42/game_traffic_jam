@@ -9,17 +9,17 @@
     { word: 'please', sentence: 'Please open the door.' },
     { word: 'laugh', sentence: 'That joke makes me laugh.' },
   ];
-  const RACE_DISTANCE = 1000;
+  const RACE_DISTANCE = 5000;
   const TRACK_SCALE = 1.3;
-  const STORAGE_KEY = 'spellingSprint.race.v2';
+  const STORAGE_KEY = `spellingSprint.race.v2.${RACE_DISTANCE}`;
   const $ = (id) => document.getElementById(id);
   const canvas = $('race');
   const ctx = canvas.getContext('2d');
   const scooterSheet = new Image();
-  scooterSheet.src = './scooter-sprites.png?v=1.3.0';
+  scooterSheet.src = './scooter-sprites.png?v=1.3.1';
   const greenSheet = new Image(), yellowSheet = new Image();
-  greenSheet.src = './scooter-green.png?v=1.3.0';
-  yellowSheet.src = './scooter-yellow.png?v=1.3.0';
+  greenSheet.src = './scooter-green.png?v=1.3.1';
+  yellowSheet.src = './scooter-yellow.png?v=1.3.1';
   // Normalized wheel-midpoint anchors keep the generated poses on the same ground.
   const poses = [
     { sx: 0, sy: 0, ax: 313, ay: 589 },
@@ -151,7 +151,7 @@
     const place = 1 + Number(ghostTime < elapsed) + Number(RACE_DISTANCE / 27 < elapsed);
     $('result-title').textContent = `第 ${place} 名 · 完賽！`;
     $('result-distance').textContent = `${elapsed.toFixed(2)} s`;
-    $('result-stats').textContent = `1,000 m · 答對 ${correct} 題 · 正確率 ${attempts ? Math.round(correct / attempts * 100) : 0}%`;
+    $('result-stats').textContent = `5,000 m · 答對 ${correct} 題 · 正確率 ${attempts ? Math.round(correct / attempts * 100) : 0}%`;
     $('result-record').textContent = `${elapsed < previousBest ? '新紀錄！' : '最佳紀錄'} ${Math.min(previousBest, elapsed).toFixed(2)} s`;
     $('review').replaceChildren();
     missed.forEach((word) => {
@@ -307,7 +307,7 @@
     const pulse = rewards.length ? rewards[rewards.length - 1].elapsed : 1.2;
     const pose = state === 'racing' && !reducedMotion ? pulse < .4 ? 1 : pulse < .8 ? 2 : 0 : 0;
     scooter(playerX, 251, '#d93850', state === 'racing' && boost > 0 && !reducedMotion, 1, pose);
-    ctx.fillStyle = '#20302d'; ctx.font = 'bold 14px system-ui'; ctx.fillText('SPELLING CIRCUIT / 1,000 M', 20, 415);
+    ctx.fillStyle = '#20302d'; ctx.font = 'bold 14px system-ui'; ctx.fillText('SPELLING CIRCUIT / 5,000 M', 20, 415);
   }
 
   document.addEventListener('visibilitychange', () => {
