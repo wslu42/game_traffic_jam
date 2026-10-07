@@ -9,17 +9,17 @@
     { word: 'please', sentence: 'Please open the door.' },
     { word: 'laugh', sentence: 'That joke makes me laugh.' },
   ];
-  const RACE_DISTANCE = 5000;
+  const RACE_DISTANCE = 2000;
   const TRACK_SCALE = 1.3;
   const STORAGE_KEY = `spellingSprint.race.v2.${RACE_DISTANCE}`;
   const $ = (id) => document.getElementById(id);
   const canvas = $('race');
   const ctx = canvas.getContext('2d');
   const scooterSheet = new Image();
-  scooterSheet.src = './scooter-sprites.png?v=1.4.0';
+  scooterSheet.src = './scooter-sprites.png?v=1.4.1';
   const greenSheet = new Image(), yellowSheet = new Image();
-  greenSheet.src = './scooter-green.png?v=1.4.0';
-  yellowSheet.src = './scooter-yellow.png?v=1.4.0';
+  greenSheet.src = './scooter-green.png?v=1.4.1';
+  yellowSheet.src = './scooter-yellow.png?v=1.4.1';
   // Normalized wheel-midpoint anchors keep the generated poses on the same ground.
   const poses = [
     { sx: 0, sy: 0, ax: 313, ay: 589 },
