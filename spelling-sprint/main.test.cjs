@@ -302,7 +302,7 @@ test('fast player wins before opponents, exact finish time persists and ghost re
 test('fixed audio works without speech synthesis and failed audio still has a guarded fallback', () => {
   const fixed = game({ supported: false }); fixed.start(); fixed.tick(3.01);
   assert.equal(fixed.node('answer').disabled, false);
-  assert.ok(fixed.audioPlays.at(-1).includes('.mp3?v=2.0.7'));
+  assert.ok(fixed.audioPlays.at(-1).includes('.mp3?v=2.0.8'));
 
   const noAudio = game({ supported: false, words: [{ word: 'plain' }] }); noAudio.start(); noAudio.tick(70);
   assert.match(noAudio.node('feedback').textContent, /無法播放/);
@@ -357,7 +357,7 @@ test('a legacy single race loads without inventing a second opponent; corrupt ol
 test('fixed word and sentence audio are preloaded before the race', () => {
   const g = game();
   assert.equal(g.audioLoads.length, 14);
-  assert.ok(g.audioLoads.every((source) => /\.mp3\?v=2\.0\.7$/.test(source)));
+  assert.ok(g.audioLoads.every((source) => /\.mp3\?v=2\.0\.8$/.test(source)));
 });
 
 test('keyboard mode keeps answer focus while replaying and submitting', () => {
@@ -471,4 +471,13 @@ test('submit control lives in the letter pad beside backspace and remains associ
   const source = require('node:fs').readFileSync(require('node:path').join(__dirname, 'main.js'), 'utf8');
   assert.match(source, /letterPad\.insertBefore\(button, \$\('submit'\)\)/);
   assert.match(source, /letterPad\.insertBefore\(backspaceButton, \$\('submit'\)\)/);
+});
+
+
+test('backspace and submit share one special-key style and submit uses a child-readable label', () => {
+  const html = require('node:fs').readFileSync(require('node:path').join(__dirname, 'index.html'), 'utf8');
+  const css = require('node:fs').readFileSync(require('node:path').join(__dirname, 'style.css'), 'utf8');
+  assert.match(html, /<button id="submit"[^>]*>送出<\/button>/);
+  assert.match(css, /#submit \{[^}]*background:\s*#526b61[^}]*color:\s*white/s);
+  assert.match(css, /#letter-pad button\[aria-label="刪除最後一個字母"\] \{[^}]*background:\s*#526b61[^}]*color:\s*white/s);
 });
