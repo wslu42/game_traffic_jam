@@ -1,14 +1,9 @@
 (() => {
   'use strict';
-  const WORDS = [
-    { word: 'these', sentence: 'These are my shoes.' },
-    { word: 'their', sentence: 'Their car is red.' },
-    { word: 'always', sentence: 'I always brush my teeth.' },
-    { word: 'first', sentence: 'You are first in line.' },
-    { word: 'very', sentence: 'I am very happy.' },
-    { word: 'please', sentence: 'Please open the door.' },
-    { word: 'laugh', sentence: 'That joke makes me laugh.' },
-  ];
+  const WORDS = Array.isArray(window.SPELLING_WORDS) ? window.SPELLING_WORDS
+    .filter((entry) => entry && typeof entry.word === 'string' && entry.word.trim() && entry.word.trim().length <= 24)
+    .map((entry) => ({ word: entry.word.trim().toLowerCase(), sentence: typeof entry.sentence === 'string' ? entry.sentence.trim() : '' }))
+    .filter((entry, index, entries) => entries.findIndex((other) => other.word === entry.word) === index) : [];
   const RACE_DISTANCE = 2000;
   const TRACK_SCALE = 1.3;
   const STORAGE_KEY = `spellingSprint.race.v2.${RACE_DISTANCE}`;
@@ -16,10 +11,10 @@
   const canvas = $('race');
   const ctx = canvas.getContext('2d');
   const scooterSheet = new Image();
-  scooterSheet.src = './scooter-sprites.png?v=1.4.1';
+  scooterSheet.src = './scooter-sprites.png?v=1.4.2';
   const greenSheet = new Image(), yellowSheet = new Image();
-  greenSheet.src = './scooter-green.png?v=1.4.1';
-  yellowSheet.src = './scooter-yellow.png?v=1.4.1';
+  greenSheet.src = './scooter-green.png?v=1.4.2';
+  yellowSheet.src = './scooter-yellow.png?v=1.4.2';
   // Normalized wheel-midpoint anchors keep the generated poses on the same ground.
   const poses = [
     { sx: 0, sy: 0, ax: 313, ay: 589 },
@@ -97,7 +92,7 @@
       const j = Math.floor(Math.random() * (i + 1));
       [bag[i], bag[j]] = [bag[j], bag[i]];
     }
-    if (current && bag[0].word === current.word) [bag[0], bag[1]] = [bag[1], bag[0]];
+    if (bag.length > 1 && current && bag[0].word === current.word) [bag[0], bag[1]] = [bag[1], bag[0]];
     return bag;
   }
 
@@ -116,6 +111,10 @@
   }
 
   function start() {
+    if (!WORDS.length) {
+      $('feedback').textContent = '字庫沒有可用的單字，請檢查 words.js。';
+      return;
+    }
     speechVersion++;
     if (synth) synth.cancel();
     if (!speechAvailable) {

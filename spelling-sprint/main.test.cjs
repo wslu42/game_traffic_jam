@@ -3,13 +3,34 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync(require('node:path').join(__dirname, 'main.js'), 'utf8');
+const wordScope = { window: {} };
+vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname, 'words.js'), 'utf8'), wordScope);
 
 function record(speed) {
   const time = 2000 / speed;
   return { time, trace: [{ time: 0, distance: 0 }, { time, distance: 2000 }] };
 }
 
-function game({ storage = JSON.stringify({ best: 2000 / 27, ...record(24), previous: record(27) }), supported = true, storageFails = false, reducedMotion = false, spriteFails = false } = {}) {
+test('independent word bank supports additions, optional sentences and a single-word round', () => {
+  const g = game({ words: [{ word: ' APPLE ', sentence: 'An apple a day.' }, { word: 'apple' }, null, { word: '' }] });
+  g.start(); g.tick(3.01);
+  for (let i = 0; i < 4; i++) {
+    assert.equal(g.word(), 'apple'); g.submit('apple'); g.tick(.5);
+  }
+  assert.equal(g.node('correct').textContent, 4);
+  g.node('sentence').listeners.click();
+  assert.equal(g.word(), 'apple. An apple a day.');
+  const optional = game({ words: [{ word: 'banana' }] }); optional.start(); optional.tick(3.01);
+  optional.node('sentence').listeners.click();
+  assert.ok(optional.word().startsWith('banana.'));
+  for (const words of [[], null, [{ word: 3 }]]) {
+    const empty = game({ words }); empty.start(); empty.tick(4);
+    assert.match(empty.node('feedback').textContent, /字庫/);
+    assert.equal(empty.node('answer').disabled, true);
+  }
+});
+
+function game({ storage = JSON.stringify({ best: 2000 / 27, ...record(24), previous: record(27) }), supported = true, storageFails = false, reducedMotion = false, spriteFails = false, words = wordScope.window.SPELLING_WORDS } = {}) {
   let now = 0, frame;
   const nodes = new Map(), utterances = [];
   let rendered = { cars: [], stripes: [], checks: [], labels: [], sprites: [] };
@@ -48,7 +69,7 @@ function game({ storage = JSON.stringify({ best: 2000 / 27, ...record(24), previ
   };
   class Utterance { constructor(text) { this.text = text; } }
   vm.runInNewContext(source, {
-    document, window: supported ? { speechSynthesis: synth, SpeechSynthesisUtterance: Utterance } : {},
+    document, window: { SPELLING_WORDS: words, ...(supported ? { speechSynthesis: synth, SpeechSynthesisUtterance: Utterance } : {}) },
     Image: class { complete = true; naturalWidth = spriteFails ? 0 : 1254; },
     SpeechSynthesisUtterance: Utterance, localStorage, performance: { now: () => now },
     matchMedia: () => ({ matches: reducedMotion }), requestAnimationFrame(fn) { frame = fn; },
