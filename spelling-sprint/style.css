@@ -34,18 +34,18 @@ i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 .input-mode { display: inline-flex; flex: 0 0 auto; gap: 1px; padding: 2px; border-radius: 7px; background: #dbe8e1; }
 .input-mode button { width: 34px; min-height: 32px; height: 32px; padding: 2px; border-radius: 5px; background: transparent; color: #36584c; font-size: 15px; }
 .input-mode button[aria-pressed="true"] { background: #20302d; color: white; }
-#answer-form { display: flex; flex: 1 1 auto; min-width: 0; gap: 4px; }
+#answer-form { display: flex; flex: 1 1 auto; min-width: 0; }
 input { width: 100%; min-width: 54px; height: 36px; border: 2px solid #b7cbc0; border-radius: 6px; background: white; color: #20302d; padding: 4px 7px; font: 19px system-ui, sans-serif; }
 input[aria-invalid="true"] { border-color: #d93850; }
-#submit { width: 42px; height: 36px; min-height: 36px; flex: 0 0 42px; font-size: 21px; padding: 3px; background: #169e88; }
+#submit { grid-column: 11 / span 2; width: 100%; background: #169e88; color: white; font-size: 18px; }
 #letter-pad { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: center; gap: 4px; margin-top: 6px; }
 #letter-pad button { grid-column: span 2; justify-self: start; min-width: 0; min-height: 36px; height: 36px; padding: 3px; border-radius: 999px; background: #dbe8e1; color: #20302d; font-size: 15px; }
 #letter-pad button { width: 100%; }
 #letter-pad button[data-present="false"] { color: #c4ceca; }
 #letter-pad button:nth-child(25) { grid-column: 1 / span 2; }
 #letter-pad button:nth-child(26) { grid-column: 3 / span 2; }
-#letter-pad button:nth-child(27) { grid-column: 5 / span 2; }
-#letter-pad button:last-child { background: #526b61; color: white; }
+#letter-pad button:nth-child(27) { grid-column: 9 / span 2; }
+#letter-pad button[aria-label="刪除最後一個字母"] { background: #526b61; color: white; }
 #letter-pad[hidden] { display: none !important; }
 #feedback { min-height: 20px; margin: 6px 0; font-weight: 650; font-size: 13px; }
 #results { border-top: 2px solid #20302d; padding-top: 16px; }
@@ -71,7 +71,7 @@ h3 { font-size: 14px; margin: 20px 0 10px; }
   .input-mode { padding: 1px; }
   .input-mode button { width: 29px; min-height: 30px; height: 30px; font-size: 13px; }
   input { min-width: 46px; height: 32px; padding: 3px 5px; font-size: 17px; }
-  #submit { width: 36px; height: 32px; min-height: 32px; flex-basis: 36px; font-size: 19px; }
+  #submit { font-size: 17px; }
   #letter-pad { gap: 3px; margin-top: 5px; }
   #letter-pad button { min-height: 34px; height: 34px; }
   #letter-pad button { width: 100%; font-size: 14px; }

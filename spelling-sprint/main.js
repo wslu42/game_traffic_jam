@@ -16,10 +16,10 @@
   const canvas = $('race');
   const ctx = canvas.getContext('2d');
   const scooterSheet = new Image();
-  scooterSheet.src = './scooter-sprites.png?v=2.0.6';
+  scooterSheet.src = './scooter-sprites.png?v=2.0.7';
   const greenSheet = new Image(), yellowSheet = new Image();
-  greenSheet.src = './scooter-green.png?v=2.0.6';
-  yellowSheet.src = './scooter-yellow.png?v=2.0.6';
+  greenSheet.src = './scooter-green.png?v=2.0.7';
+  yellowSheet.src = './scooter-yellow.png?v=2.0.7';
   // Normalized wheel-midpoint anchors keep the generated poses on the same ground.
   const poses = [
     { sx: 0, sy: 0, ax: 313, ay: 589 },
@@ -35,7 +35,7 @@
   function cachedAudio(source) {
     if (!mediaAvailable || !source) return null;
     if (!audioCache.has(source)) {
-      const audio = new Audio(`${source}?v=2.0.6`);
+      const audio = new Audio(`${source}?v=2.0.7`);
       audio.preload = 'auto';
       if (typeof audio.load === 'function') audio.load();
       audioCache.set(source, audio);
@@ -87,7 +87,7 @@
       $('answer').value += letter;
       $('answer').removeAttribute('aria-invalid');
     });
-    letterPad.append(button);
+    letterPad.insertBefore(button, $('submit'));
     letterButtons.push(button);
   }
   const backspaceButton = document.createElement('button');
@@ -101,7 +101,7 @@
     $('answer').value = $('answer').value.slice(0, -1);
     $('answer').removeAttribute('aria-invalid');
   });
-  letterPad.append(backspaceButton);
+  letterPad.insertBefore(backspaceButton, $('submit'));
   letterButtons.push(backspaceButton);
 
   function focusAnswer() {

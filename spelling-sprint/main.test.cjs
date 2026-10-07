@@ -296,7 +296,7 @@ test('fast player wins before opponents, exact finish time persists and ghost re
 test('fixed audio works without speech synthesis and failed audio still has a guarded fallback', () => {
   const fixed = game({ supported: false }); fixed.start(); fixed.tick(3.01);
   assert.equal(fixed.node('answer').disabled, false);
-  assert.ok(fixed.audioPlays.at(-1).includes('.mp3?v=2.0.6'));
+  assert.ok(fixed.audioPlays.at(-1).includes('.mp3?v=2.0.7'));
 
   const noAudio = game({ supported: false, words: [{ word: 'plain' }] }); noAudio.start(); noAudio.tick(70);
   assert.match(noAudio.node('feedback').textContent, /無法播放/);
@@ -351,7 +351,7 @@ test('a legacy single race loads without inventing a second opponent; corrupt ol
 test('fixed word and sentence audio are preloaded before the race', () => {
   const g = game();
   assert.equal(g.audioLoads.length, 14);
-  assert.ok(g.audioLoads.every((source) => /\.mp3\?v=2\.0\.6$/.test(source)));
+  assert.ok(g.audioLoads.every((source) => /\.mp3\?v=2\.0\.7$/.test(source)));
 });
 
 test('keyboard mode keeps answer focus while replaying and submitting', () => {
@@ -431,7 +431,8 @@ test('letter pad layout contract keeps six stable columns per full row', () => {
   assert.match(css, /#letter-pad button \{[^}]*grid-column:\s*span 2/s);
   assert.match(css, /nth-child\(25\)[^}]*grid-column:\s*1 \/ span 2/s);
   assert.match(css, /nth-child\(26\)[^}]*grid-column:\s*3 \/ span 2/s);
-  assert.match(css, /nth-child\(27\)[^}]*grid-column:\s*5 \/ span 2/s);
+  assert.match(css, /nth-child\(27\)[^}]*grid-column:\s*9 \/ span 2/s);
+  assert.match(css, /#submit \{[^}]*grid-column:\s*11 \/ span 2/s);
 });
 
 
@@ -454,3 +455,13 @@ test('letter pad uses pill corners, equal button sizes, and lighter absent-lette
   assert.doesNotMatch(css, /data-size="(?:small|large)"/);
 });
 
+
+
+test('submit control lives in the letter pad beside backspace and remains associated with the answer form', () => {
+  const html = require('node:fs').readFileSync(require('node:path').join(__dirname, 'index.html'), 'utf8');
+  assert.match(html, /<div id="letter-pad"[^>]*>\s*<button id="submit"[^>]*form="answer-form"/s);
+  assert.doesNotMatch(html, /<form id="answer-form"[\s\S]*?<button id="submit"/);
+  const g = game();
+  const pad = g.node('letter-pad');
+  assert.equal(pad.children.at(-2).attributes['aria-label'], '刪除最後一個字母');
+});
