@@ -4,21 +4,22 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync(require('node:path').join(__dirname, 'main.js'), 'utf8');
 
-function game({ storage = null, supported = true, storageFails = false, reducedMotion = false } = {}) {
+function game({ storage = null, supported = true, storageFails = false, reducedMotion = false, spriteFails = false } = {}) {
   let now = 0, frame;
   const nodes = new Map(), utterances = [];
-  let rendered = { cars: [], stripes: [], checks: [], labels: [] };
+  let rendered = { cars: [], stripes: [], checks: [], labels: [], sprites: [] };
   const drawing = new Proxy({}, {
     get: (target, method) => (...args) => {
       if (method === 'translate') rendered.cars.push(args[0]);
       if (method === 'fillRect' && args[2] === 48 && args[3] === 3) rendered.stripes.push(args[0]);
       if (method === 'fillRect' && args[2] === 16 && args[3] === 15.625) rendered.checks.push({ x: args[0], color: target.fillStyle });
       if (method === 'fillText') rendered.labels.push(args);
+      if (method === 'drawImage') rendered.sprites.push(args.slice(1));
     },
     set(target, key, value) { target[key] = value; return true; },
   });
   function stepFrame(milliseconds) {
-    rendered = { cars: [], stripes: [], checks: [], labels: [] };
+    rendered = { cars: [], stripes: [], checks: [], labels: [], sprites: [] };
     now += milliseconds; frame(now);
   }
   function node(id) {
@@ -43,6 +44,7 @@ function game({ storage = null, supported = true, storageFails = false, reducedM
   class Utterance { constructor(text) { this.text = text; } }
   vm.runInNewContext(source, {
     document, window: supported ? { speechSynthesis: synth, SpeechSynthesisUtterance: Utterance } : {},
+    Image: class { complete = true; naturalWidth = spriteFails ? 0 : 1254; },
     SpeechSynthesisUtterance: Utterance, localStorage, performance: { now: () => now },
     matchMedia: () => ({ matches: reducedMotion }), requestAnimationFrame(fn) { frame = fn; },
   });
@@ -55,6 +57,25 @@ function game({ storage = null, supported = true, storageFails = false, reducedM
     word() { return utterances.at(-1).text; },
   };
 }
+
+test('scooter poses follow answer pulses and sprint, with a fixed ground anchor', () => {
+  const g = game(); g.start(); g.tick(3.01);
+  assert.deepEqual(g.render().sprites.at(-1).slice(0, 2), [0, 0]);
+  g.submit(g.word()); g.tick(.01);
+  assert.deepEqual(g.render().sprites.at(-1).slice(0, 2), [627, 0]);
+  g.tick(.4);
+  assert.deepEqual(g.render().sprites.at(-1).slice(0, 2), [0, 627]);
+  g.tick(.4);
+  assert.deepEqual(g.render().sprites.at(-1).slice(0, 2), [0, 0]);
+  for (let i = 0; i < 2; i++) { g.submit(g.word()); g.tick(.5); }
+  assert.deepEqual(g.render().sprites.at(-1).slice(0, 2), [627, 627]);
+  const quiet = game({ reducedMotion: true }); quiet.start(); quiet.tick(3.01);
+  quiet.submit(quiet.word()); quiet.tick(.01);
+  assert.deepEqual(quiet.render().sprites.at(-1).slice(0, 2), [0, 0]);
+  const failed = game({ spriteFails: true }); failed.start(); failed.tick(3.01);
+  assert.equal(failed.render().sprites.length, 0);
+  assert.equal(failed.render().cars.length, 3);
+});
 
 test('all seven words appear once per round; normalization, retry, and three-answer nitro work', () => {
   const g = game(); g.start(); g.tick(3.01);
@@ -81,16 +102,16 @@ test('all seven words appear once per round; normalization, retry, and three-ans
 test('fourth correct answer keeps nitro active until its three-second duration expires', () => {
   const g = game(); g.start(); g.tick(3.01);
   for (let i = 0; i < 3; i++) { g.submit(g.word()); g.tick(.5); }
-  assert.equal(g.node('nitro').attributes['aria-label'], '氮氣加速中');
+  assert.equal(g.node('nitro').attributes['aria-label'], '衝刺中');
   g.submit(g.word());
   assert.equal(g.node('streak').textContent, 4);
   assert.equal(g.node('nitro').value, 3);
-  assert.match(g.node('feedback').textContent, /氮氣加速中/);
+  assert.match(g.node('feedback').textContent, /衝刺中/);
   g.tick(.5);
-  assert.equal(g.node('banner').textContent, 'NITRO!');
+  assert.equal(g.node('banner').textContent, 'SPRINT!');
   g.tick(2.1);
   assert.equal(g.node('nitro').value, 1);
-  assert.equal(g.node('nitro').attributes['aria-label'], '氮氣能量');
+  assert.equal(g.node('nitro').attributes['aria-label'], '衝刺能量');
 });
 
 test('answer rewards move the road and opponents continuously rather than teleporting', () => {

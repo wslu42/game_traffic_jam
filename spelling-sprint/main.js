@@ -15,6 +15,15 @@
   const $ = (id) => document.getElementById(id);
   const canvas = $('race');
   const ctx = canvas.getContext('2d');
+  const scooterSheet = new Image();
+  scooterSheet.src = './scooter-sprites.png?v=1.2.0';
+  // Normalized wheel-midpoint anchors keep the generated poses on the same ground.
+  const poses = [
+    { sx: 0, sy: 0, ax: 313, ay: 589 },
+    { sx: 627, sy: 0, ax: 323, ay: 589 },
+    { sx: 0, sy: 627, ax: 330, ay: 555 },
+    { sx: 627, sy: 627, ax: 341, ay: 555 },
+  ];
   const synth = window.speechSynthesis;
   const speechAvailable = Boolean(synth && window.SpeechSynthesisUtterance);
   let saved = null;
@@ -118,7 +127,7 @@
     ['submit', 'replay', 'sentence'].forEach((id) => { $(id).disabled = true; });
     chooseVoice();
     speak('Ready.');
-    $('opponent').innerHTML = `<i class="mint"></i>${saved ? '上次的你' : '電腦車'}`;
+    $('opponent').innerHTML = `<i class="mint"></i>${saved ? '上次的你' : '電腦選手'}`;
     updateHud();
   }
 
@@ -175,7 +184,7 @@
       rewards.push({ distance: 45 + quick * 5, elapsed: 0 });
       speed = Math.min(52, speed + 5);
       if (streak % 3 === 0) boost = 3;
-      $('feedback').textContent = streak % 3 === 0 ? '連對三題！氮氣加速！' : boost > 0 ? '答對了！氮氣加速中！' : '答對了！加速！';
+      $('feedback').textContent = streak % 3 === 0 ? '連對三題！衝刺！' : boost > 0 ? '答對了！衝刺中！' : '答對了！加速！';
       $('answer').removeAttribute('aria-invalid');
       ['submit', 'replay', 'sentence'].forEach((id) => { $(id).disabled = true; });
       advanceAt = elapsed + 0.45;
@@ -209,25 +218,31 @@
     $('correct').textContent = correct;
     $('streak').textContent = streak;
     $('nitro').value = boost > 0 ? 3 : streak % 3;
-    $('nitro').setAttribute('aria-label', boost > 0 ? '氮氣加速中' : '氮氣能量');
+    $('nitro').setAttribute('aria-label', boost > 0 ? '衝刺中' : '衝刺能量');
   }
 
-  function car(x, y, color, boosting, alpha = 1) {
+  function scooter(x, y, color, boosting, alpha = 1, pose = 0) {
     ctx.save(); ctx.translate(x, y); ctx.globalAlpha = alpha;
-    if (boosting) { ctx.fillStyle = '#ffc947'; ctx.beginPath(); ctx.moveTo(-39, -10); ctx.lineTo(-75 - Math.random() * 20, 0); ctx.lineTo(-39, 10); ctx.fill(); }
-    ctx.fillStyle = '#192a2d';
-    for (const yy of [-23, 15]) { ctx.fillRect(-29, yy, 19, 8); ctx.fillRect(17, yy, 19, 8); }
-    ctx.fillStyle = color; ctx.fillRect(-42, -19, 88, 38);
-    ctx.fillStyle = '#e0f7ff'; ctx.fillRect(-9, -14, 28, 28);
-    ctx.fillStyle = '#314b59'; ctx.fillRect(17, -13, 7, 26);
-    ctx.fillStyle = '#fff3bf'; ctx.fillRect(39, -14, 5, 8); ctx.fillRect(39, 6, 5, 8);
-    ctx.fillStyle = '#ffffff'; ctx.fillRect(-36, -3, 24, 6);
+    ctx.fillStyle = color; ctx.fillRect(-34, 8, 68, 4);
+    if (scooterSheet.complete && scooterSheet.naturalWidth) {
+      const p = poses[boosting ? 3 : pose], scale = .135;
+      ctx.drawImage(scooterSheet, p.sx, p.sy, 627, 627,
+        -p.ax * scale, 8 - p.ay * scale, 627 * scale, 627 * scale);
+    } else {
+      // Keep a recognizable scooter visible while the PNG loads or if it fails.
+      ctx.strokeStyle = color; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.moveTo(-25, 0); ctx.lineTo(25, 0);
+      ctx.lineTo(18, -48); ctx.lineTo(8, -48); ctx.stroke();
+      ctx.fillStyle = '#192a2d';
+      for (const wheel of [-25, 25]) { ctx.beginPath(); ctx.arc(wheel, 3, 7, 0, Math.PI * 2); ctx.fill(); }
+    }
     ctx.restore();
   }
 
-  function opponentCar(d, visualDistance, y, color, alpha = 1) {
+  function opponentScooter(d, visualDistance, y, color, alpha = 1) {
     const x = playerX + (d - visualDistance) * TRACK_SCALE;
-    car(x, y, color, false, alpha);
+    const pose = state === 'racing' && !reducedMotion ? [1, 2, 0, 0][Math.floor(elapsed * 3) % 4] : 0;
+    scooter(x, y, color, false, alpha, pose);
     if (x < -45 || x > 1245) {
       const ahead = x > 1245;
       const fontSize = Math.max(15, 12 * 1200 / (canvas.clientWidth || 1200));
@@ -275,10 +290,11 @@
     } else if (state === 'finished') {
       finishLine(playerX + (finishLineDistance - visualDistance) * TRACK_SCALE);
     }
-    opponentCar(ghostDistance(), visualDistance, 167, '#169e88', .8);
-    opponentCar(elapsed * 27, visualDistance, 336, '#f4cd45');
-    const bob = state === 'racing' && !reducedMotion ? Math.sin(now / 65) * 1.4 : 0;
-    car(playerX, 251 + bob, '#d93850', boost > 0 && !reducedMotion);
+    opponentScooter(ghostDistance(), visualDistance, 167, '#169e88', .8);
+    opponentScooter(elapsed * 27, visualDistance, 336, '#f4cd45');
+    const pulse = rewards.length ? rewards[rewards.length - 1].elapsed : 1.2;
+    const pose = state === 'racing' && !reducedMotion ? pulse < .4 ? 1 : pulse < .8 ? 2 : 0 : 0;
+    scooter(playerX, 251, '#d93850', state === 'racing' && boost > 0 && !reducedMotion, 1, pose);
     ctx.fillStyle = '#20302d'; ctx.font = 'bold 14px system-ui'; ctx.fillText('SPELLING CIRCUIT / 60 SEC', 20, 415);
   }
 
@@ -315,7 +331,7 @@
         else {
           if (advanceAt && elapsed >= advanceAt) nextQuestion();
           if (elapsed > feedbackUntil) $('feedback').textContent = '聽到了嗎？';
-          $('banner').textContent = boost > 0 ? 'NITRO!' : elapsed >= 50 ? 'FINAL SPRINT!' : '';
+          $('banner').textContent = boost > 0 ? 'SPRINT!' : elapsed >= 50 ? 'FINAL SPRINT!' : '';
         }
         updateHud();
       } else if (state === 'finished') {
