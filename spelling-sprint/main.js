@@ -9,14 +9,17 @@
     { word: 'please', sentence: 'Please open the door.' },
     { word: 'laugh', sentence: 'That joke makes me laugh.' },
   ];
-  const SECONDS = 60;
+  const RACE_DISTANCE = 1000;
   const TRACK_SCALE = 1.3;
-  const STORAGE_KEY = 'spellingSprint.v1';
+  const STORAGE_KEY = 'spellingSprint.race.v2';
   const $ = (id) => document.getElementById(id);
   const canvas = $('race');
   const ctx = canvas.getContext('2d');
   const scooterSheet = new Image();
-  scooterSheet.src = './scooter-sprites.png?v=1.2.0';
+  scooterSheet.src = './scooter-sprites.png?v=1.3.0';
+  const greenSheet = new Image(), yellowSheet = new Image();
+  greenSheet.src = './scooter-green.png?v=1.3.0';
+  yellowSheet.src = './scooter-yellow.png?v=1.3.0';
   // Normalized wheel-midpoint anchors keep the generated poses on the same ground.
   const poses = [
     { sx: 0, sy: 0, ax: 313, ay: 589 },
@@ -29,14 +32,19 @@
   let saved = null;
   try {
     const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (data && Number.isFinite(data.best) && data.best >= 0 && Array.isArray(data.trace) &&
-      data.trace.length === 61 && data.trace.every((n, i, a) => Number.isFinite(n) && n >= 0 && n < 100000 && (!i || n >= a[i - 1]))) saved = data;
+    if (data && Number.isFinite(data.best) && data.best > 0 && Number.isFinite(data.time) && data.time > 0 &&
+      data.time < 1000 && Array.isArray(data.trace) && data.trace.length >= 2 && data.trace.length <= 1002 &&
+      data.trace[0].time === 0 && data.trace[0].distance === 0 &&
+      data.trace.at(-1).time === data.time && data.trace.at(-1).distance === RACE_DISTANCE &&
+      data.trace.every((n, i, a) => Number.isFinite(n.time) && Number.isFinite(n.distance) &&
+        n.time >= 0 && n.distance >= 0 && n.distance <= RACE_DISTANCE &&
+        (!i || (n.time > a[i - 1].time && n.distance >= a[i - 1].distance)))) saved = data;
   } catch { /* Storage may be unavailable in private browsing. */ }
   let state = 'ready', elapsed = 0, distance = 0, speed = 15, boost = 0;
   let rewards = [];
-  let playerX = 320, finishTime = 0, finishLineDistance = 0;
+  let playerX = 320, finishTime = 0;
   let correct = 0, attempts = 0, streak = 0, question = 0, current = null;
-  let queue = [], missed = new Set(), trace = [0], previous = performance.now();
+  let queue = [], missed = new Set(), trace = [{ time: 0, distance: 0 }], previous = performance.now();
   let countdown = 0, promptTime = 0, advanceAt = 0, feedbackUntil = 0;
   let voice = null, speechFailed = false, speechVersion = 0;
   let opponentTrace = saved ? saved.trace : null;
@@ -110,9 +118,9 @@
     }
     state = 'countdown'; elapsed = 0; distance = 0; speed = 15; boost = 0;
     rewards = [];
-    playerX = 320; finishTime = 0; finishLineDistance = 0;
+    playerX = 320; finishTime = 0;
     correct = 0; attempts = 0; streak = 0; question = 0; current = null;
-    queue = []; missed = new Set(); trace = [0]; advanceAt = 0; feedbackUntil = 0; speechFailed = false;
+    queue = []; missed = new Set(); trace = [{ time: 0, distance: 0 }]; advanceAt = 0; feedbackUntil = 0; speechFailed = false;
     countdown = 3; previous = performance.now();
     opponentTrace = saved ? saved.trace : null;
     $('results').hidden = true;
@@ -133,18 +141,18 @@
 
   function finish() {
     state = 'finished';
-    finishLineDistance = distance + (reducedMotion ? -60 : 44) / TRACK_SCALE;
     speechVersion++;
     if (synth) synth.cancel();
     setInputEnabled(false);
     $('answer').blur();
-    while (trace.length < 61) trace.push(distance);
-    const previousBest = saved ? saved.best : 0;
-    const lastDistance = saved ? saved.trace[60] : 60 * 24;
-    $('result-title').textContent = distance >= lastDistance ? '漂亮完賽！' : '完賽！再挑戰一次';
-    $('result-distance').textContent = `${Math.floor(distance)} m`;
-    $('result-stats').textContent = `答對 ${correct} 題 · 正確率 ${attempts ? Math.round(correct / attempts * 100) : 0}%`;
-    $('result-record').textContent = `${distance > previousBest ? '新紀錄！' : '最佳紀錄'} ${Math.floor(Math.max(previousBest, distance))} m`;
+    trace.push({ time: elapsed, distance: RACE_DISTANCE });
+    const previousBest = saved ? saved.best : Infinity;
+    const ghostTime = opponentTrace ? opponentTrace.at(-1).time : RACE_DISTANCE / 24;
+    const place = 1 + Number(ghostTime < elapsed) + Number(RACE_DISTANCE / 27 < elapsed);
+    $('result-title').textContent = `第 ${place} 名 · 完賽！`;
+    $('result-distance').textContent = `${elapsed.toFixed(2)} s`;
+    $('result-stats').textContent = `1,000 m · 答對 ${correct} 題 · 正確率 ${attempts ? Math.round(correct / attempts * 100) : 0}%`;
+    $('result-record').textContent = `${elapsed < previousBest ? '新紀錄！' : '最佳紀錄'} ${Math.min(previousBest, elapsed).toFixed(2)} s`;
     $('review').replaceChildren();
     missed.forEach((word) => {
       const button = document.createElement('button');
@@ -154,7 +162,7 @@
       $('review').append(button);
     });
     if (!missed.size) $('review').textContent = attempts ? '沒有拼錯的字，做得好！' : '下一場再試試看！';
-    saved = { best: Math.max(previousBest, distance), trace };
+    saved = { best: Math.min(previousBest, elapsed), time: elapsed, trace };
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(saved)); }
     catch { $('result-record').textContent += '（此裝置無法儲存紀錄）'; }
     $('results').hidden = false;
@@ -169,7 +177,7 @@
   $('sentence').addEventListener('click', () => { if (state === 'racing' && current) { speak(`${current.word}. ${current.sentence}`); $('answer').focus({ preventScroll: true }); } });
   $('answer-form').addEventListener('submit', (event) => {
     event.preventDefault();
-    if (state !== 'racing' || advanceAt || elapsed >= SECONDS || document.hidden) return;
+    if (state !== 'racing' || advanceAt || distance >= RACE_DISTANCE || document.hidden) return;
     const answer = $('answer').value.trim().toLowerCase();
     if (!answer) return;
     attempts++;
@@ -193,10 +201,12 @@
     updateHud();
   });
 
-  function ghostDistance() {
-    if (!opponentTrace) return elapsed * 24;
-    const second = Math.min(59, Math.floor(elapsed));
-    return opponentTrace[second] + (opponentTrace[second + 1] - opponentTrace[second]) * (elapsed - second);
+  function ghostDistance(time = elapsed) {
+    if (!opponentTrace) return Math.min(RACE_DISTANCE, time * 24);
+    if (time >= opponentTrace.at(-1).time) return RACE_DISTANCE;
+    const index = opponentTrace.findIndex((sample) => sample.time > time);
+    const a = opponentTrace[index - 1], b = opponentTrace[index];
+    return a.distance + (b.distance - a.distance) * (time - a.time) / (b.time - a.time);
   }
 
   function advanceRewards(step) {
@@ -213,7 +223,7 @@
   }
 
   function updateHud() {
-    $('time').innerHTML = `${Math.ceil(Math.max(0, SECONDS - elapsed))}<span>s</span>`;
+    $('time').innerHTML = `${elapsed.toFixed(1)}<span>s</span>`;
     $('distance').innerHTML = `${Math.floor(distance)}<span>m</span>`;
     $('correct').textContent = correct;
     $('streak').textContent = streak;
@@ -221,12 +231,12 @@
     $('nitro').setAttribute('aria-label', boost > 0 ? '衝刺中' : '衝刺能量');
   }
 
-  function scooter(x, y, color, boosting, alpha = 1, pose = 0) {
+  function scooter(x, y, color, boosting, alpha = 1, pose = 0, sheet = scooterSheet) {
     ctx.save(); ctx.translate(x, y); ctx.globalAlpha = alpha;
-    ctx.fillStyle = color; ctx.fillRect(-34, 8, 68, 4);
-    if (scooterSheet.complete && scooterSheet.naturalWidth) {
+    if (sheet.complete && sheet.naturalWidth) {
       const p = poses[boosting ? 3 : pose], scale = .135;
-      ctx.drawImage(scooterSheet, p.sx, p.sy, 627, 627,
+      ctx.drawImage(sheet, p.sx / 1254 * sheet.naturalWidth, p.sy / 1254 * sheet.naturalWidth,
+        sheet.naturalWidth / 2, sheet.naturalWidth / 2,
         -p.ax * scale, 8 - p.ay * scale, 627 * scale, 627 * scale);
     } else {
       // Keep a recognizable scooter visible while the PNG loads or if it fails.
@@ -239,10 +249,14 @@
     ctx.restore();
   }
 
-  function opponentScooter(d, visualDistance, y, color, alpha = 1) {
+  function opponentScooter(d, visualDistance, y, color, alpha = 1, sheet = scooterSheet) {
     const x = playerX + (d - visualDistance) * TRACK_SCALE;
-    const pose = state === 'racing' && !reducedMotion ? [1, 2, 0, 0][Math.floor(elapsed * 3) % 4] : 0;
-    scooter(x, y, color, false, alpha, pose);
+    const pose = d < RACE_DISTANCE && state === 'racing' && !reducedMotion ? [1, 2, 0, 0][Math.floor(elapsed * 3) % 4] : 0;
+    scooter(x, y, color, false, alpha, pose, sheet);
+    if (d >= RACE_DISTANCE && x >= -45 && x <= 1245) {
+      const size = Math.max(18, 10 * 1200 / (canvas.clientWidth || 1200));
+      ctx.fillStyle = '#ffffff'; ctx.font = `bold ${size}px system-ui`; ctx.fillText('FINISHED', x - size * 2.5, y + 34);
+    }
     if (x < -45 || x > 1245) {
       const ahead = x > 1245;
       const fontSize = Math.max(15, 12 * 1200 / (canvas.clientWidth || 1200));
@@ -251,7 +265,7 @@
       ctx.fillStyle = '#20302d'; ctx.fillRect(labelX, y - fontSize * .8, width, fontSize * 1.6);
       ctx.fillStyle = color; ctx.fillRect(labelX + 8, y - fontSize * .3, fontSize * .6, fontSize * .6);
       ctx.fillStyle = '#ffffff'; ctx.font = `bold ${fontSize}px system-ui`;
-      ctx.fillText(`${ahead ? '>' : '<'} ${Math.round(Math.abs(d - visualDistance))} m`, labelX + fontSize + 15, y + fontSize * .35);
+      ctx.fillText(d >= RACE_DISTANCE ? 'FINISHED' : `${ahead ? '>' : '<'} ${Math.round(Math.abs(d - visualDistance))} m`, labelX + fontSize + 15, y + fontSize * .35);
     }
   }
 
@@ -263,9 +277,10 @@
         ctx.fillRect(x + col * 16, 126 + row * 15.625, 16, 15.625);
       }
     }
-    ctx.fillStyle = '#20302d'; ctx.fillRect(x - 24, 90, 98, 26);
-    ctx.fillStyle = '#ffffff'; ctx.font = 'bold 17px system-ui';
-    ctx.fillText('FINISH', x - 8, 109);
+    const size = Math.max(17, 10 * 1200 / (canvas.clientWidth || 1200));
+    ctx.fillStyle = '#20302d'; ctx.fillRect(x - 24, 118 - size * 1.4, size * 5.8, size * 1.4);
+    ctx.fillStyle = '#ffffff'; ctx.font = `bold ${size}px system-ui`;
+    ctx.fillText('FINISH', x - 8, 110);
   }
 
   function draw(now) {
@@ -273,7 +288,7 @@
     ctx.fillStyle = '#91d7e8'; ctx.fillRect(0, 0, w, h);
     const coast = state === 'finished' && !reducedMotion ? 80 * (1 - Math.exp(-finishTime / .65)) : 0;
     const visualDistance = distance + coast;
-    const scroll = reducedMotion ? 0 : visualDistance * TRACK_SCALE - (playerX - 320);
+    const scroll = reducedMotion ? (state === 'finished' ? RACE_DISTANCE * TRACK_SCALE : 0) : visualDistance * TRACK_SCALE - (playerX - 320);
     ctx.fillStyle = '#f7fffc';
     for (let i = 0; i < 6; i++) { const x = ((i * 260 - scroll * .12) % 1560 + 1560) % 1560 - 150; ctx.fillRect(x, 40, 80, 12); ctx.fillRect(x + 25, 28, 35, 12); }
     ctx.fillStyle = '#51af75'; ctx.fillRect(0, 95, w, 335);
@@ -284,18 +299,15 @@
     ctx.fillStyle = '#465353'; ctx.fillRect(0, 126, w, 250);
     ctx.fillStyle = '#bccac6';
     for (const y of [210, 294]) for (let i = 0; i < 14; i++) ctx.fillRect(i * 100 - scroll % 100, y, 48, 3);
-    // A time-trial finish approaches with the countdown, then becomes fixed in world space.
-    if (state === 'racing' && elapsed >= SECONDS - 10) {
-      finishLine(playerX + 44 + (SECONDS - elapsed) * 80);
-    } else if (state === 'finished') {
-      finishLine(playerX + (finishLineDistance - visualDistance) * TRACK_SCALE);
-    }
-    opponentScooter(ghostDistance(), visualDistance, 167, '#169e88', .8);
-    opponentScooter(elapsed * 27, visualDistance, 336, '#f4cd45');
+    // Finish and road markings share one world-to-screen transform.
+    finishLine(320 + RACE_DISTANCE * TRACK_SCALE - scroll);
+    const raceTime = elapsed + (state === 'finished' ? finishTime : 0);
+    opponentScooter(ghostDistance(raceTime), visualDistance, 167, '#169e88', 1, greenSheet);
+    opponentScooter(Math.min(RACE_DISTANCE, raceTime * 27), visualDistance, 336, '#f4cd45', 1, yellowSheet);
     const pulse = rewards.length ? rewards[rewards.length - 1].elapsed : 1.2;
     const pose = state === 'racing' && !reducedMotion ? pulse < .4 ? 1 : pulse < .8 ? 2 : 0 : 0;
     scooter(playerX, 251, '#d93850', state === 'racing' && boost > 0 && !reducedMotion, 1, pose);
-    ctx.fillStyle = '#20302d'; ctx.font = 'bold 14px system-ui'; ctx.fillText('SPELLING CIRCUIT / 60 SEC', 20, 415);
+    ctx.fillStyle = '#20302d'; ctx.font = 'bold 14px system-ui'; ctx.fillText('SPELLING CIRCUIT / 1,000 M', 20, 415);
   }
 
   document.addEventListener('visibilitychange', () => {
@@ -316,8 +328,9 @@
           else { state = 'racing'; nextQuestion(); }
         }
       } else if (state === 'racing') {
-        const step = Math.min(dt, SECONDS - elapsed);
+        const step = dt;
         const previousDistance = distance;
+        const previousElapsed = elapsed;
         elapsed += step;
         distance += step * speed + Math.min(step, boost) * 35;
         advanceRewards(step);
@@ -326,12 +339,16 @@
         playerX += Math.min(cameraShift, (distance - previousDistance) * TRACK_SCALE * .65);
         boost = Math.max(0, boost - step);
         speed = Math.max(15, speed - step * 1.5);
-        while (trace.length <= Math.floor(elapsed)) trace.push(distance);
-        if (elapsed >= SECONDS) finish();
+        if (distance >= RACE_DISTANCE) {
+          elapsed = previousElapsed + step * (RACE_DISTANCE - previousDistance) / (distance - previousDistance);
+          distance = RACE_DISTANCE;
+          finish();
+        }
         else {
+          if (elapsed - trace.at(-1).time >= 1) trace.push({ time: elapsed, distance });
           if (advanceAt && elapsed >= advanceAt) nextQuestion();
           if (elapsed > feedbackUntil) $('feedback').textContent = '聽到了嗎？';
-          $('banner').textContent = boost > 0 ? 'SPRINT!' : elapsed >= 50 ? 'FINAL SPRINT!' : '';
+          $('banner').textContent = boost > 0 ? 'SPRINT!' : distance >= RACE_DISTANCE - 200 ? 'FINAL SPRINT!' : '';
         }
         updateHud();
       } else if (state === 'finished') {

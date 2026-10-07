@@ -3,26 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Spelling Sprint | 拼字計時賽</title>
-  <link rel="stylesheet" href="./style.css?v=1.2.0">
-  <link rel="stylesheet" href="../version.css?v=1.2.0">
+  <title>Spelling Sprint | 拼字競速賽</title>
+  <link rel="stylesheet" href="./style.css?v=1.3.0">
+  <link rel="stylesheet" href="../version.css?v=1.3.0">
 </head>
 <body>
   <main>
-    <header><a href="../index.html" aria-label="回到遊戲入口">← Arcade</a><h1>Spelling Sprint <span>拼字計時賽</span><small class="game-version" aria-label="Version 1.2.0">v1.2.0</small></h1><button id="start" type="button">開始比賽</button></header>
+    <header><a href="../index.html" aria-label="回到遊戲入口">← Arcade</a><h1>Spelling Sprint <span>拼字競速賽</span><small class="game-version" aria-label="Version 1.3.0">v1.3.0</small></h1><button id="start" type="button">開始比賽</button></header>
     <section class="hud" aria-label="比賽狀態">
-      <div><span>剩餘時間</span><strong id="time">60<span>s</span></strong></div>
+      <div><span>用時</span><strong id="time">0.0<span>s</span></strong></div>
       <div><span>距離</span><strong id="distance">0<span>m</span></strong></div>
       <div><span>答對</span><strong id="correct">0</strong></div>
       <div><span>連對</span><strong id="streak">0</strong><meter id="nitro" min="0" max="3" value="0" aria-label="衝刺能量"></meter></div>
     </section>
     <section class="track" aria-label="賽道">
-      <canvas id="race" width="1200" height="430" aria-label="拼字滑板車計時賽動畫"></canvas>
+      <canvas id="race" width="1200" height="430" aria-label="拼字滑板車競速賽動畫"></canvas>
       <div class="race-labels"><span><i class="red"></i>你</span><span id="opponent"><i class="mint"></i>電腦選手</span><span><i class="yellow"></i>挑戰選手</span></div>
       <div id="banner">READY TO RACE</div>
     </section>
     <section class="cockpit">
-      <div class="prompt-row"><span id="question">60 秒計時賽</span><div><button id="replay" class="icon" type="button" disabled title="重播單字" aria-label="重播單字">🔊</button><button id="sentence" type="button" disabled>聽例句</button></div></div>
+      <div class="prompt-row"><span id="question">1,000 公尺競速賽</span><div><button id="replay" class="icon" type="button" disabled title="重播單字" aria-label="重播單字">🔊</button><button id="sentence" type="button" disabled>聽例句</button></div></div>
       <form id="answer-form" autocomplete="off">
         <label class="sr-only" for="answer">輸入聽到的英文單字</label>
         <input id="answer" name="spelling" type="text" placeholder="輸入英文單字" lang="en" inputmode="text" autocapitalize="none" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="24" disabled>
@@ -36,6 +36,6 @@
       <h3>再練一下</h3><div id="review"></div>
     </section>
   </main>
-  <script src="./main.js?v=1.2.0" defer></script>
+  <script src="./main.js?v=1.3.0" defer></script>
 </body>
 </html>
