@@ -16,10 +16,10 @@
   const canvas = $('race');
   const ctx = canvas.getContext('2d');
   const scooterSheet = new Image();
-  scooterSheet.src = './scooter-sprites.png?v=2.0.0';
+  scooterSheet.src = './scooter-sprites.png?v=2.0.1';
   const greenSheet = new Image(), yellowSheet = new Image();
-  greenSheet.src = './scooter-green.png?v=2.0.0';
-  yellowSheet.src = './scooter-yellow.png?v=2.0.0';
+  greenSheet.src = './scooter-green.png?v=2.0.1';
+  yellowSheet.src = './scooter-yellow.png?v=2.0.1';
   // Normalized wheel-midpoint anchors keep the generated poses on the same ground.
   const poses = [
     { sx: 0, sy: 0, ax: 313, ay: 589 },
@@ -35,7 +35,7 @@
   function cachedAudio(source) {
     if (!mediaAvailable || !source) return null;
     if (!audioCache.has(source)) {
-      const audio = new Audio(`${source}?v=2.0.0`);
+      const audio = new Audio(`${source}?v=2.0.1`);
       audio.preload = 'auto';
       if (typeof audio.load === 'function') audio.load();
       audioCache.set(source, audio);
@@ -67,15 +67,28 @@
   let inputMode = 'letters';
   const letterButtons = [];
   const letterPad = $('letter-pad');
-  for (const letter of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+  const letterFrequency = new Map();
+  for (const entry of WORDS) {
+    for (const letter of entry.word) {
+      if (/^[a-z]$/.test(letter)) letterFrequency.set(letter, (letterFrequency.get(letter) || 0) + 1);
+    }
+  }
+  const usedFrequencies = [...letterFrequency.values()];
+  const largeLetterThreshold = usedFrequencies.length
+    ? Math.ceil(usedFrequencies.reduce((sum, count) => sum + count, 0) / usedFrequencies.length)
+    : Infinity;
+  for (const letter of 'abcdefghijklmnopqrstuvwxyz') {
+    const frequency = letterFrequency.get(letter) || 0;
     const button = document.createElement('button');
     button.type = 'button';
     button.textContent = letter;
     button.setAttribute('aria-label', `字母 ${letter}`);
+    button.setAttribute('data-frequency', String(frequency));
+    button.setAttribute('data-size', frequency >= largeLetterThreshold ? 'large' : 'small');
     button.disabled = true;
     button.addEventListener('click', () => {
       if (state !== 'racing' || advanceAt || $('answer').value.length >= 24) return;
-      $('answer').value += letter.toLowerCase();
+      $('answer').value += letter;
       $('answer').removeAttribute('aria-invalid');
     });
     letterPad.append(button);
@@ -108,7 +121,7 @@
     letterPad.hidden = !letters;
     $('answer').readOnly = letters;
     $('answer').setAttribute('inputmode', letters ? 'none' : 'text');
-    $('answer').placeholder = letters ? '依序選擇字母' : '輸入英文單字';
+    $('answer').placeholder = letters ? '拼字' : '輸入';
     if (letters) $('answer').blur();
     else focusAnswer();
   }
@@ -231,7 +244,7 @@
     question++;
     promptTime = elapsed;
     advanceAt = 0;
-    $('question').textContent = `第 ${question} 題`;
+    $('question').textContent = `第${question}題`;
     $('answer').value = '';
     $('answer').removeAttribute('aria-invalid');
     setInputEnabled(true);
@@ -263,7 +276,7 @@
     $('start').textContent = '重新開始';
     $('answer').value = '';
     $('answer').removeAttribute('aria-invalid');
-    $('question').textContent = '準備起跑';
+    $('question').textContent = '準備';
     $('feedback').textContent = '';
     $('answer').disabled = false;
     if (inputMode === 'keyboard') focusAnswer();

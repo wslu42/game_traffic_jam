@@ -296,7 +296,7 @@ test('fast player wins before opponents, exact finish time persists and ghost re
 test('fixed audio works without speech synthesis and failed audio still has a guarded fallback', () => {
   const fixed = game({ supported: false }); fixed.start(); fixed.tick(3.01);
   assert.equal(fixed.node('answer').disabled, false);
-  assert.ok(fixed.audioPlays.at(-1).includes('.mp3?v=2.0.0'));
+  assert.ok(fixed.audioPlays.at(-1).includes('.mp3?v=2.0.1'));
 
   const noAudio = game({ supported: false, words: [{ word: 'plain' }] }); noAudio.start(); noAudio.tick(70);
   assert.match(noAudio.node('feedback').textContent, /無法播放/);
@@ -351,7 +351,7 @@ test('a legacy single race loads without inventing a second opponent; corrupt ol
 test('fixed word and sentence audio are preloaded before the race', () => {
   const g = game();
   assert.equal(g.audioLoads.length, 14);
-  assert.ok(g.audioLoads.every((source) => /\.mp3\?v=2\.0\.0$/.test(source)));
+  assert.ok(g.audioLoads.every((source) => /\.mp3\?v=2\.0\.1$/.test(source)));
 });
 
 test('keyboard mode keeps answer focus while replaying and submitting', () => {
@@ -404,11 +404,29 @@ test('letter pad enters and deletes letters without needing keyboard focus', () 
   const g = game(); g.start(); g.tick(3.01);
   const pad = g.node('letter-pad');
   assert.equal(pad.children.length, 27);
-  const t = pad.children.find((button) => button.textContent === 'T');
-  const h = pad.children.find((button) => button.textContent === 'H');
+  const t = pad.children.find((button) => button.textContent === 't');
+  const h = pad.children.find((button) => button.textContent === 'h');
   const backspace = pad.children.at(-1);
   t.listeners.click(); h.listeners.click();
   assert.equal(g.node('answer').value, 'th');
   backspace.listeners.click();
   assert.equal(g.node('answer').value, 't');
+});
+
+
+test('letter pad uses lowercase labels and two sizes from current word-bank frequency', () => {
+  const g = game();
+  const pad = g.node('letter-pad');
+  const byLetter = (letter) => pad.children.find((button) => button.textContent === letter);
+  assert.equal(byLetter('e').attributes['data-frequency'], '6');
+  assert.equal(byLetter('e').attributes['data-size'], 'large');
+  assert.equal(byLetter('s').attributes['data-size'], 'large');
+  assert.equal(byLetter('a').attributes['data-size'], 'large');
+  assert.equal(byLetter('t').attributes['data-size'], 'large');
+  assert.equal(byLetter('h').attributes['data-size'], 'large');
+  assert.equal(byLetter('r').attributes['data-size'], 'large');
+  assert.equal(byLetter('l').attributes['data-size'], 'large');
+  assert.equal(byLetter('i').attributes['data-size'], 'small');
+  assert.equal(byLetter('z').attributes['data-frequency'], '0');
+  assert.equal(byLetter('z').attributes['data-size'], 'small');
 });
