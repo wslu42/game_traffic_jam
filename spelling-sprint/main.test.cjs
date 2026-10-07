@@ -302,7 +302,7 @@ test('fast player wins before opponents, exact finish time persists and ghost re
 test('fixed audio works without speech synthesis and failed audio still has a guarded fallback', () => {
   const fixed = game({ supported: false }); fixed.start(); fixed.tick(3.01);
   assert.equal(fixed.node('answer').disabled, false);
-  assert.ok(fixed.audioPlays.at(-1).includes('.mp3?v=2.0.8'));
+  assert.ok(fixed.audioPlays.at(-1).includes('.mp3?v=2.0.9'));
 
   const noAudio = game({ supported: false, words: [{ word: 'plain' }] }); noAudio.start(); noAudio.tick(70);
   assert.match(noAudio.node('feedback').textContent, /無法播放/);
@@ -357,7 +357,7 @@ test('a legacy single race loads without inventing a second opponent; corrupt ol
 test('fixed word and sentence audio are preloaded before the race', () => {
   const g = game();
   assert.equal(g.audioLoads.length, 14);
-  assert.ok(g.audioLoads.every((source) => /\.mp3\?v=2\.0\.8$/.test(source)));
+  assert.ok(g.audioLoads.every((source) => /\.mp3\?v=2\.0\.9$/.test(source)));
 });
 
 test('keyboard mode keeps answer focus while replaying and submitting', () => {
@@ -406,17 +406,18 @@ test('letter pad is the default and stays mutually exclusive with the system key
   assert.ok(blurs >= 2);
 });
 
-test('letter pad enters and deletes letters without needing keyboard focus', () => {
+test('letter pad enters letters and clear-all removes the full answer without keyboard focus', () => {
   const g = game(); g.start(); g.tick(3.01);
   const pad = g.node('letter-pad');
   assert.equal(pad.children.length, 27);
   const t = pad.children.find((button) => button.textContent === 't');
   const h = pad.children.find((button) => button.textContent === 'h');
-  const backspace = pad.children.at(-1);
+  const clear = pad.children.at(-1);
   t.listeners.click(); h.listeners.click();
   assert.equal(g.node('answer').value, 'th');
-  backspace.listeners.click();
-  assert.equal(g.node('answer').value, 't');
+  clear.listeners.click();
+  assert.equal(g.node('answer').value, '');
+  assert.equal(clear.attributes['aria-label'], '清除全部文字');
 });
 
 
@@ -474,10 +475,15 @@ test('submit control lives in the letter pad beside backspace and remains associ
 });
 
 
-test('backspace and submit share one special-key style and submit uses a child-readable label', () => {
+test('clear and submit share one special-key style and inline feedback is part of the control row', () => {
   const html = require('node:fs').readFileSync(require('node:path').join(__dirname, 'index.html'), 'utf8');
   const css = require('node:fs').readFileSync(require('node:path').join(__dirname, 'style.css'), 'utf8');
-  assert.match(html, /<button id="submit"[^>]*>送出<\/button>/);
-  assert.match(css, /#submit \{[^}]*background:\s*#526b61[^}]*color:\s*white/s);
-  assert.match(css, /#letter-pad button\[aria-label="刪除最後一個字母"\] \{[^}]*background:\s*#526b61[^}]*color:\s*white/s);
+  const source = require('node:fs').readFileSync(require('node:path').join(__dirname, 'main.js'), 'utf8');
+  assert.match(html, /<button id="submit" class="special-key"[^>]*>送出<\/button>/);
+  assert.match(html, /<form id="answer-form"[\s\S]*?<\/form>\s*<span id="feedback"/);
+  assert.match(source, /backspaceButton\.className = 'special-key'/);
+  assert.match(source, /aria-label', '清除全部文字'/);
+  assert.match(css, /#letter-pad \.special-key \{[^}]*background:\s*#526b61[^}]*color:\s*white/s);
+  assert.match(css, /#letter-pad \.special-key:disabled \{[^}]*background:\s*#526b61[^}]*color:\s*white/s);
+  assert.match(css, /grid-template-columns:\s*minmax\(48px, auto\) 44px 56px 76px minmax\(110px, 1fr\) minmax\(82px, 112px\)/);
 });

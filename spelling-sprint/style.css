@@ -26,18 +26,18 @@ i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 .red { background: #d93850; }.mint { background: #169e88; }.yellow { background: #f4cd45; }
 #banner { position: absolute; right: 18px; top: 80px; color: #20302d; font-size: 22px; font-weight: 900; text-align: right; pointer-events: none; }
 .cockpit { padding: 10px 0 4px; }
-.control-row { display: flex; align-items: center; gap: 5px; min-width: 0; }
-#question { flex: 0 0 auto; white-space: nowrap; font-size: 13px; font-weight: 700; }
-.control-row > button { min-height: 36px; height: 36px; padding: 5px 7px; background: #dbe8e1; color: #20302d; }
-.compact-icon { width: 38px; flex: 0 0 38px; font-size: 17px; }
-.compact-text { flex: 0 0 auto; font-size: 12px; }
-.input-mode { display: inline-flex; flex: 0 0 auto; gap: 1px; padding: 2px; border-radius: 7px; background: #dbe8e1; }
-.input-mode button { width: 34px; min-height: 32px; height: 32px; padding: 2px; border-radius: 5px; background: transparent; color: #36584c; font-size: 15px; }
+.control-row { display: grid; grid-template-columns: minmax(48px, auto) 44px 56px 76px minmax(110px, 1fr) minmax(82px, 112px); align-items: center; gap: 6px; min-width: 0; }
+#question { min-width: 48px; white-space: nowrap; font-size: 13px; font-weight: 700; }
+.control-row > button { min-height: 38px; height: 38px; padding: 5px 8px; background: #dbe8e1; color: #20302d; }
+.compact-icon { width: 44px; font-size: 17px; }
+.compact-text { width: 56px; font-size: 12px; }
+.input-mode { display: inline-flex; width: 76px; gap: 2px; padding: 2px; border-radius: 7px; background: #dbe8e1; }
+.input-mode button { width: 35px; min-height: 34px; height: 34px; padding: 2px; border-radius: 5px; background: transparent; color: #36584c; font-size: 15px; }
 .input-mode button[aria-pressed="true"] { background: #20302d; color: white; }
-#answer-form { display: flex; flex: 1 1 auto; min-width: 0; }
+#answer-form { display: flex; min-width: 0; }
 input { width: 100%; min-width: 54px; height: 36px; border: 2px solid #b7cbc0; border-radius: 6px; background: white; color: #20302d; padding: 4px 7px; font: 19px system-ui, sans-serif; }
 input[aria-invalid="true"] { border-color: #d93850; }
-#submit { grid-column: 11 / span 2; width: 100%; background: #526b61; color: white; font-size: 15px; }
+#submit { grid-column: 11 / span 2; width: 100%; font-size: 15px; }
 #letter-pad { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: center; gap: 4px; margin-top: 6px; }
 #letter-pad button { grid-column: span 2; justify-self: start; min-width: 0; min-height: 36px; height: 36px; padding: 3px; border-radius: 999px; background: #dbe8e1; color: #20302d; font-size: 15px; }
 #letter-pad button { width: 100%; }
@@ -45,9 +45,10 @@ input[aria-invalid="true"] { border-color: #d93850; }
 #letter-pad button:nth-child(25) { grid-column: 1 / span 2; }
 #letter-pad button:nth-child(26) { grid-column: 3 / span 2; }
 #letter-pad button:nth-child(27) { grid-column: 9 / span 2; }
-#letter-pad button[aria-label="刪除最後一個字母"] { background: #526b61; color: white; }
+#letter-pad .special-key { background: #526b61; color: white; }
+#letter-pad .special-key:disabled { opacity: .55; background: #526b61; color: white; }
 #letter-pad[hidden] { display: none !important; }
-#feedback { min-height: 20px; margin: 6px 0; font-weight: 650; font-size: 13px; }
+#feedback { min-width: 82px; min-height: 36px; display: flex; align-items: center; justify-content: flex-start; padding: 0 6px; border-radius: 6px; color: #526b61; font-weight: 700; font-size: 12px; line-height: 1.15; }
 #results { border-top: 2px solid #20302d; padding-top: 16px; }
 [hidden] { display: none !important; }
 .result-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
@@ -63,19 +64,19 @@ h3 { font-size: 14px; margin: 20px 0 10px; }
   canvas { aspect-ratio: 1200 / 600; } #banner { font-size: 17px; right: 10px; }
   .race-labels { gap: 6px; font-size: 11px; }
   .cockpit { padding-top: 7px; }
-  .control-row { gap: 3px; }
-  #question { font-size: 11px; }
-  .control-row > button { min-height: 32px; height: 32px; padding: 3px 5px; }
-  .compact-icon { width: 33px; flex-basis: 33px; font-size: 15px; }
-  .compact-text { font-size: 11px; }
-  .input-mode { padding: 1px; }
-  .input-mode button { width: 29px; min-height: 30px; height: 30px; font-size: 13px; }
-  input { min-width: 46px; height: 32px; padding: 3px 5px; font-size: 17px; }
+  .control-row { grid-template-columns: 42px 38px 48px 66px minmax(74px, 1fr) 72px; gap: 3px; }
+  #question { min-width: 42px; font-size: 11px; }
+  .control-row > button { min-height: 34px; height: 34px; padding: 3px 5px; }
+  .compact-icon { width: 38px; font-size: 15px; }
+  .compact-text { width: 48px; font-size: 11px; }
+  .input-mode { width: 66px; padding: 1px; }
+  .input-mode button { width: 31px; min-height: 32px; height: 32px; font-size: 13px; }
+  input { min-width: 46px; height: 34px; padding: 3px 5px; font-size: 17px; }
   #submit { font-size: 14px; }
   #letter-pad { gap: 3px; margin-top: 5px; }
   #letter-pad button { min-height: 34px; height: 34px; }
   #letter-pad button { width: 100%; font-size: 14px; }
-  #feedback { margin: 5px 0; }
+  #feedback { min-width: 72px; min-height: 34px; padding: 0 4px; font-size: 11px; }
 }
 @media (prefers-reduced-motion: reduce) { canvas { opacity: .95; } }
 
