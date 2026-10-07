@@ -436,9 +436,9 @@ test('letter pad layout contract keeps six stable columns per full row', () => {
   const css = require('node:fs').readFileSync(require('node:path').join(__dirname, 'style.css'), 'utf8');
   assert.match(css, /grid-template-columns:\s*repeat\(12,/);
   assert.match(css, /#letter-pad button \{[^}]*grid-column:\s*span 2/s);
-  assert.match(css, /nth-child\(25\)[^}]*grid-column:\s*4 \/ span 2/s);
-  assert.match(css, /nth-child\(26\)[^}]*grid-column:\s*6 \/ span 2/s);
-  assert.match(css, /nth-child\(27\)[^}]*grid-column:\s*8 \/ span 2/s);
+  assert.match(css, /nth-child\(25\)[^}]*grid-column:\s*1 \/ span 2/s);
+  assert.match(css, /nth-child\(26\)[^}]*grid-column:\s*3 \/ span 2/s);
+  assert.match(css, /nth-child\(27\)[^}]*grid-column:\s*5 \/ span 2/s);
 });
 
 
