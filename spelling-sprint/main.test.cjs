@@ -7,7 +7,18 @@ const source = fs.readFileSync(require('node:path').join(__dirname, 'main.js'), 
 function game({ storage = null, supported = true, storageFails = false } = {}) {
   let now = 0, frame;
   const nodes = new Map(), utterances = [];
-  const drawing = new Proxy({}, { get: () => () => {}, set: () => true });
+  let rendered = { cars: [], stripes: [] };
+  const drawing = new Proxy({}, {
+    get: (target, method) => (...args) => {
+      if (method === 'translate') rendered.cars.push(args[0]);
+      if (method === 'fillRect' && args[2] === 48 && args[3] === 3) rendered.stripes.push(args[0]);
+    },
+    set: () => true,
+  });
+  function stepFrame(milliseconds) {
+    rendered = { cars: [], stripes: [] };
+    now += milliseconds; frame(now);
+  }
   function node(id) {
     if (!nodes.has(id)) nodes.set(id, {
       value: '', textContent: '', innerHTML: '', disabled: true, hidden: true,
@@ -36,7 +47,8 @@ function game({ storage = null, supported = true, storageFails = false } = {}) {
   return {
     node, document, utterances, saved: () => JSON.parse(storage),
     start() { node('start').listeners.click(); },
-    tick(seconds) { for (let i = 0; i < Math.round(seconds * 100); i++) { now += 10; frame(now); } },
+    tick(seconds) { for (let i = 0; i < Math.round(seconds * 100); i++) stepFrame(10); },
+    render: () => rendered,
     submit(value) { node('answer').value = value; node('answer-form').listeners.submit({ preventDefault() {} }); },
     word() { return utterances.at(-1).text; },
   };
@@ -62,6 +74,40 @@ test('all seven words appear once per round; normalization, retry, and three-ans
   assert.equal(g.node('review').children[0].textContent, words[0]);
   assert.equal(g.saved().trace.length, 61);
   assert.ok(g.saved().trace.every((n, i, a) => !i || n >= a[i - 1]));
+});
+
+test('fourth correct answer keeps nitro active until its three-second duration expires', () => {
+  const g = game(); g.start(); g.tick(3.01);
+  for (let i = 0; i < 3; i++) { g.submit(g.word()); g.tick(.5); }
+  assert.equal(g.node('nitro').attributes['aria-label'], '氮氣加速中');
+  g.submit(g.word());
+  assert.equal(g.node('streak').textContent, 4);
+  assert.equal(g.node('nitro').value, 3);
+  assert.match(g.node('feedback').textContent, /氮氣加速中/);
+  g.tick(.5);
+  assert.equal(g.node('banner').textContent, 'NITRO!');
+  g.tick(2.1);
+  assert.equal(g.node('nitro').value, 1);
+  assert.equal(g.node('nitro').attributes['aria-label'], '氮氣能量');
+});
+
+test('answer rewards move the road and opponents continuously rather than teleporting', () => {
+  const g = game(); g.start(); g.tick(3.01);
+  const before = g.render(), beforeDistance = g.node('distance').innerHTML;
+  g.submit(g.word());
+  assert.equal(g.node('distance').innerHTML, beforeDistance);
+  g.tick(.01);
+  const after = g.render();
+  assert.ok(Math.abs(after.cars[0] - before.cars[0]) < 1);
+  assert.ok(Math.abs(after.stripes[0] - before.stripes[0]) < 1);
+  g.tick(1.2);
+  assert.ok(parseInt(g.node('distance').innerHTML, 10) >= 100);
+});
+
+test('restarting discards pending answer rewards', () => {
+  const g = game(); g.start(); g.tick(3.01); g.submit(g.word());
+  g.start(); g.tick(3.01); g.tick(1.2);
+  assert.ok(parseInt(g.node('distance').innerHTML, 10) < 20);
 });
 
 test('60 seconds ends the race, blocks late answers, and restart resets counters with last-run opponent', () => {

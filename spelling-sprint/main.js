@@ -23,6 +23,7 @@
       data.trace.length === 61 && data.trace.every((n, i, a) => Number.isFinite(n) && n >= 0 && n < 100000 && (!i || n >= a[i - 1]))) saved = data;
   } catch { /* Storage may be unavailable in private browsing. */ }
   let state = 'ready', elapsed = 0, distance = 0, speed = 15, boost = 0;
+  let rewards = [];
   let correct = 0, attempts = 0, streak = 0, question = 0, current = null;
   let queue = [], missed = new Set(), trace = [0], previous = performance.now();
   let countdown = 0, promptTime = 0, advanceAt = 0, feedbackUntil = 0;
@@ -97,6 +98,7 @@
       return;
     }
     state = 'countdown'; elapsed = 0; distance = 0; speed = 15; boost = 0;
+    rewards = [];
     correct = 0; attempts = 0; streak = 0; question = 0; current = null;
     queue = []; missed = new Set(); trace = [0]; advanceAt = 0; feedbackUntil = 0; speechFailed = false;
     countdown = 3; previous = performance.now();
@@ -166,10 +168,10 @@
     } else {
       correct++; streak++;
       const quick = Math.max(0, 8 - (elapsed - promptTime));
-      distance += 45 + quick * 5;
+      rewards.push({ distance: 45 + quick * 5, elapsed: 0 });
       speed = Math.min(52, speed + 5);
       if (streak % 3 === 0) boost = 3;
-      $('feedback').textContent = streak % 3 === 0 ? '連對三題！氮氣加速！' : '答對了！加速！';
+      $('feedback').textContent = streak % 3 === 0 ? '連對三題！氮氣加速！' : boost > 0 ? '答對了！氮氣加速中！' : '答對了！加速！';
       $('answer').removeAttribute('aria-invalid');
       ['submit', 'replay', 'sentence'].forEach((id) => { $(id).disabled = true; });
       advanceAt = elapsed + 0.45;
@@ -184,12 +186,26 @@
     return opponentTrace[second] + (opponentTrace[second + 1] - opponentTrace[second]) * (elapsed - second);
   }
 
+  function advanceRewards(step) {
+    // Deliver each answer's distance over a smooth 1.2-second acceleration pulse.
+    const progress = (time) => {
+      const t = Math.min(1, time / 1.2);
+      return t * t * (3 - 2 * t);
+    };
+    for (const reward of rewards) {
+      distance += reward.distance * (progress(reward.elapsed + step) - progress(reward.elapsed));
+      reward.elapsed += step;
+    }
+    rewards = rewards.filter((reward) => reward.elapsed < 1.2);
+  }
+
   function updateHud() {
     $('time').innerHTML = `${Math.ceil(Math.max(0, SECONDS - elapsed))}<span>s</span>`;
     $('distance').innerHTML = `${Math.floor(distance)}<span>m</span>`;
     $('correct').textContent = correct;
     $('streak').textContent = streak;
     $('nitro').value = boost > 0 ? 3 : streak % 3;
+    $('nitro').setAttribute('aria-label', boost > 0 ? '氮氣加速中' : '氮氣能量');
   }
 
   function car(x, y, color, boosting, alpha = 1) {
@@ -249,6 +265,7 @@
         const step = Math.min(dt, SECONDS - elapsed);
         elapsed += step;
         distance += step * speed + Math.min(step, boost) * 35;
+        advanceRewards(step);
         boost = Math.max(0, boost - step);
         speed = Math.max(15, speed - step * 1.5);
         while (trace.length <= Math.floor(elapsed)) trace.push(distance);
