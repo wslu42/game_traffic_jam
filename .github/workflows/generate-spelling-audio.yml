@@ -1,0 +1,58 @@
+name: Generate Spelling Sprint audio once
+
+on:
+  push:
+    paths:
+      - .github/workflows/generate-spelling-audio.yml
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install speech tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y espeak ffmpeg
+      - name: Generate fixed English audio
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="spelling-sprint/Audio"
+          tmp="$(mktemp -d)"
+          mkdir -p "$out"
+          make_audio() {
+            local text="$1"
+            local name="$2"
+            espeak -v en-us+f3 -s 135 -p 48 -g 4 -w "$tmp/$name.wav" "$text"
+            ffmpeg -y -loglevel error -i "$tmp/$name.wav"               -af "loudnorm=I=-18:TP=-2:LRA=7" -ar 22050 -ac 1               -codec:a libmp3lame -b:a 64k "$out/$name.mp3"
+          }
+          make_audio "these" "these"
+          make_audio "These are my shoes." "these-sentence"
+          make_audio "their" "their"
+          make_audio "Their car is red." "their-sentence"
+          make_audio "always" "always"
+          make_audio "I always brush my teeth." "always-sentence"
+          make_audio "first" "first"
+          make_audio "You are first in line." "first-sentence"
+          make_audio "very" "very"
+          make_audio "I am very happy." "very-sentence"
+          make_audio "please" "please"
+          make_audio "Please open the door." "please-sentence"
+          make_audio "laugh" "laugh"
+          make_audio "That joke makes me laugh." "laugh-sentence"
+          rm -f .github/workflows/generate-spelling-audio.yml
+      - name: Commit generated assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add spelling-sprint/Audio .github/workflows/generate-spelling-audio.yml
+          git commit -m "Add fixed Spelling Sprint audio assets"
+          git push origin HEAD:main
