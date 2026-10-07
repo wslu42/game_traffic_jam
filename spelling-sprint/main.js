@@ -16,10 +16,10 @@
   const canvas = $('race');
   const ctx = canvas.getContext('2d');
   const scooterSheet = new Image();
-  scooterSheet.src = './scooter-sprites.png?v=2.0.5';
+  scooterSheet.src = './scooter-sprites.png?v=2.0.6';
   const greenSheet = new Image(), yellowSheet = new Image();
-  greenSheet.src = './scooter-green.png?v=2.0.5';
-  yellowSheet.src = './scooter-yellow.png?v=2.0.5';
+  greenSheet.src = './scooter-green.png?v=2.0.6';
+  yellowSheet.src = './scooter-yellow.png?v=2.0.6';
   // Normalized wheel-midpoint anchors keep the generated poses on the same ground.
   const poses = [
     { sx: 0, sy: 0, ax: 313, ay: 589 },
@@ -35,7 +35,7 @@
   function cachedAudio(source) {
     if (!mediaAvailable || !source) return null;
     if (!audioCache.has(source)) {
-      const audio = new Audio(`${source}?v=2.0.5`);
+      const audio = new Audio(`${source}?v=2.0.6`);
       audio.preload = 'auto';
       if (typeof audio.load === 'function') audio.load();
       audioCache.set(source, audio);
@@ -73,10 +73,6 @@
       if (/^[a-z]$/.test(letter)) letterFrequency.set(letter, (letterFrequency.get(letter) || 0) + 1);
     }
   }
-  const usedFrequencies = [...letterFrequency.values()];
-  const largeLetterThreshold = usedFrequencies.length
-    ? Math.ceil(usedFrequencies.reduce((sum, count) => sum + count, 0) / usedFrequencies.length)
-    : Infinity;
   for (const letter of 'abcdefghijklmnopqrstuvwxyz') {
     const frequency = letterFrequency.get(letter) || 0;
     const button = document.createElement('button');
@@ -84,7 +80,6 @@
     button.textContent = letter;
     button.setAttribute('aria-label', `字母 ${letter}`);
     button.setAttribute('data-frequency', String(frequency));
-    button.setAttribute('data-size', frequency >= largeLetterThreshold ? 'large' : 'small');
     button.setAttribute('data-present', frequency > 0 ? 'true' : 'false');
     button.disabled = true;
     button.addEventListener('click', () => {
@@ -99,7 +94,6 @@
   backspaceButton.type = 'button';
   backspaceButton.textContent = '⌫';
   backspaceButton.setAttribute('aria-label', '刪除最後一個字母');
-  backspaceButton.setAttribute('data-size', 'large');
   backspaceButton.setAttribute('data-present', 'true');
   backspaceButton.disabled = true;
   backspaceButton.addEventListener('click', () => {

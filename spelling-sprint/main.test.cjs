@@ -296,7 +296,7 @@ test('fast player wins before opponents, exact finish time persists and ghost re
 test('fixed audio works without speech synthesis and failed audio still has a guarded fallback', () => {
   const fixed = game({ supported: false }); fixed.start(); fixed.tick(3.01);
   assert.equal(fixed.node('answer').disabled, false);
-  assert.ok(fixed.audioPlays.at(-1).includes('.mp3?v=2.0.5'));
+  assert.ok(fixed.audioPlays.at(-1).includes('.mp3?v=2.0.6'));
 
   const noAudio = game({ supported: false, words: [{ word: 'plain' }] }); noAudio.start(); noAudio.tick(70);
   assert.match(noAudio.node('feedback').textContent, /無法播放/);
@@ -351,7 +351,7 @@ test('a legacy single race loads without inventing a second opponent; corrupt ol
 test('fixed word and sentence audio are preloaded before the race', () => {
   const g = game();
   assert.equal(g.audioLoads.length, 14);
-  assert.ok(g.audioLoads.every((source) => /\.mp3\?v=2\.0\.5$/.test(source)));
+  assert.ok(g.audioLoads.every((source) => /\.mp3\?v=2\.0\.6$/.test(source)));
 });
 
 test('keyboard mode keeps answer focus while replaying and submitting', () => {
@@ -414,21 +414,14 @@ test('letter pad enters and deletes letters without needing keyboard focus', () 
 });
 
 
-test('letter pad uses lowercase labels and two sizes from current word-bank frequency', () => {
+test('letter pad uses lowercase labels and marks whether letters appear in the current word bank', () => {
   const g = game();
   const pad = g.node('letter-pad');
   const byLetter = (letter) => pad.children.find((button) => button.textContent === letter);
   assert.equal(byLetter('e').attributes['data-frequency'], '6');
-  assert.equal(byLetter('e').attributes['data-size'], 'large');
-  assert.equal(byLetter('s').attributes['data-size'], 'large');
-  assert.equal(byLetter('a').attributes['data-size'], 'large');
-  assert.equal(byLetter('t').attributes['data-size'], 'large');
-  assert.equal(byLetter('h').attributes['data-size'], 'large');
-  assert.equal(byLetter('r').attributes['data-size'], 'large');
-  assert.equal(byLetter('l').attributes['data-size'], 'large');
-  assert.equal(byLetter('i').attributes['data-size'], 'small');
+  assert.equal(byLetter('e').attributes['data-present'], 'true');
   assert.equal(byLetter('z').attributes['data-frequency'], '0');
-  assert.equal(byLetter('z').attributes['data-size'], 'small');
+  assert.equal(byLetter('z').attributes['data-present'], 'false');
 });
 
 
@@ -442,18 +435,8 @@ test('letter pad layout contract keeps six stable columns per full row', () => {
 });
 
 
-test('letter pad keeps fixed left anchors while frequency changes button width', () => {
-  const css = require('node:fs').readFileSync(require('node:path').join(__dirname, 'style.css'), 'utf8');
-  assert.match(css, /#letter-pad button \{[^}]*justify-self:\s*start/s);
-  assert.match(css, /data-size="small"[^}]*width:\s*72%/s);
-  assert.match(css, /data-size="large"[^}]*width:\s*100%/s);
-  assert.match(css, /nth-child\(25\)[^}]*grid-column:\s*1 \/ span 2/s);
-  assert.match(css, /nth-child\(26\)[^}]*grid-column:\s*3 \/ span 2/s);
-  assert.match(css, /nth-child\(27\)[^}]*grid-column:\s*5 \/ span 2/s);
-});
 
-
-test('letter pad uses pill corners, large backspace, and grays letters absent from the word bank', () => {
+test('letter pad uses pill corners, equal button sizes, and lighter absent-letter text', () => {
   const g = game();
   const pad = g.node('letter-pad');
   const byLetter = (letter) => pad.children.find((button) => button.textContent === letter);
@@ -461,10 +444,13 @@ test('letter pad uses pill corners, large backspace, and grays letters absent fr
 
   assert.equal(byLetter('e').attributes['data-present'], 'true');
   assert.equal(byLetter('z').attributes['data-present'], 'false');
-  assert.equal(backspace.attributes['data-size'], 'large');
   assert.equal(backspace.attributes['data-present'], 'true');
+  assert.equal(backspace.attributes['data-size'], undefined);
 
   const css = require('node:fs').readFileSync(require('node:path').join(__dirname, 'style.css'), 'utf8');
   assert.match(css, /#letter-pad button \{[^}]*border-radius:\s*999px/s);
-  assert.match(css, /data-present="false"[^}]*color:\s*#9aa7a2/s);
+  assert.match(css, /#letter-pad button \{[^}]*width:\s*100%/s);
+  assert.match(css, /data-present="false"[^}]*color:\s*#c4ceca/s);
+  assert.doesNotMatch(css, /data-size="(?:small|large)"/);
 });
+
