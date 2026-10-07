@@ -351,7 +351,7 @@ test('a legacy single race loads without inventing a second opponent; corrupt ol
 test('fixed word and sentence audio are preloaded before the race', () => {
   const g = game();
   assert.equal(g.audioLoads.length, 14);
-  assert.ok(g.audioLoads.every((source) => /\.mp3\?v=1\.5\.0$/.test(source)));
+  assert.ok(g.audioLoads.every((source) => /\.mp3\?v=1\.5\.1$/.test(source)));
 });
 
 test('mobile controls keep answer focus while replaying and submitting', () => {
