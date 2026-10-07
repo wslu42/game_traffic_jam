@@ -10,6 +10,7 @@
     { word: 'laugh', sentence: 'That joke makes me laugh.' },
   ];
   const SECONDS = 60;
+  const TRACK_SCALE = 1.3;
   const STORAGE_KEY = 'spellingSprint.v1';
   const $ = (id) => document.getElementById(id);
   const canvas = $('race');
@@ -24,6 +25,7 @@
   } catch { /* Storage may be unavailable in private browsing. */ }
   let state = 'ready', elapsed = 0, distance = 0, speed = 15, boost = 0;
   let rewards = [];
+  let playerX = 320, finishTime = 0, finishLineDistance = 0;
   let correct = 0, attempts = 0, streak = 0, question = 0, current = null;
   let queue = [], missed = new Set(), trace = [0], previous = performance.now();
   let countdown = 0, promptTime = 0, advanceAt = 0, feedbackUntil = 0;
@@ -99,6 +101,7 @@
     }
     state = 'countdown'; elapsed = 0; distance = 0; speed = 15; boost = 0;
     rewards = [];
+    playerX = 320; finishTime = 0; finishLineDistance = 0;
     correct = 0; attempts = 0; streak = 0; question = 0; current = null;
     queue = []; missed = new Set(); trace = [0]; advanceAt = 0; feedbackUntil = 0; speechFailed = false;
     countdown = 3; previous = performance.now();
@@ -121,6 +124,7 @@
 
   function finish() {
     state = 'finished';
+    finishLineDistance = distance + (reducedMotion ? -60 : 44) / TRACK_SCALE;
     speechVersion++;
     if (synth) synth.cancel();
     setInputEnabled(false);
@@ -221,10 +225,40 @@
     ctx.restore();
   }
 
+  function opponentCar(d, visualDistance, y, color, alpha = 1) {
+    const x = playerX + (d - visualDistance) * TRACK_SCALE;
+    car(x, y, color, false, alpha);
+    if (x < -45 || x > 1245) {
+      const ahead = x > 1245;
+      const fontSize = Math.max(15, 12 * 1200 / (canvas.clientWidth || 1200));
+      const width = fontSize * 7 + 30;
+      const labelX = ahead ? 1200 - width - 12 : 12;
+      ctx.fillStyle = '#20302d'; ctx.fillRect(labelX, y - fontSize * .8, width, fontSize * 1.6);
+      ctx.fillStyle = color; ctx.fillRect(labelX + 8, y - fontSize * .3, fontSize * .6, fontSize * .6);
+      ctx.fillStyle = '#ffffff'; ctx.font = `bold ${fontSize}px system-ui`;
+      ctx.fillText(`${ahead ? '>' : '<'} ${Math.round(Math.abs(d - visualDistance))} m`, labelX + fontSize + 15, y + fontSize * .35);
+    }
+  }
+
+  function finishLine(x) {
+    if (x < -100 || x > 1260) return;
+    for (let row = 0; row < 16; row++) {
+      for (let col = 0; col < 3; col++) {
+        ctx.fillStyle = (row + col) % 2 ? '#20302d' : '#ffffff';
+        ctx.fillRect(x + col * 16, 126 + row * 15.625, 16, 15.625);
+      }
+    }
+    ctx.fillStyle = '#20302d'; ctx.fillRect(x - 24, 90, 98, 26);
+    ctx.fillStyle = '#ffffff'; ctx.font = 'bold 17px system-ui';
+    ctx.fillText('FINISH', x - 8, 109);
+  }
+
   function draw(now) {
     const w = 1200, h = 430;
     ctx.fillStyle = '#91d7e8'; ctx.fillRect(0, 0, w, h);
-    const scroll = reducedMotion ? 0 : distance * 1.3;
+    const coast = state === 'finished' && !reducedMotion ? 80 * (1 - Math.exp(-finishTime / .65)) : 0;
+    const visualDistance = distance + coast;
+    const scroll = reducedMotion ? 0 : visualDistance * TRACK_SCALE - (playerX - 320);
     ctx.fillStyle = '#f7fffc';
     for (let i = 0; i < 6; i++) { const x = ((i * 260 - scroll * .12) % 1560 + 1560) % 1560 - 150; ctx.fillRect(x, 40, 80, 12); ctx.fillRect(x + 25, 28, 35, 12); }
     ctx.fillStyle = '#51af75'; ctx.fillRect(0, 95, w, 335);
@@ -235,12 +269,16 @@
     ctx.fillStyle = '#465353'; ctx.fillRect(0, 126, w, 250);
     ctx.fillStyle = '#bccac6';
     for (const y of [210, 294]) for (let i = 0; i < 14; i++) ctx.fillRect(i * 100 - scroll % 100, y, 48, 3);
-    const ghost = ghostDistance(), rival = elapsed * 27;
-    const position = (d) => Math.max(70, Math.min(1125, 320 + (d - distance) * .7));
-    car(position(ghost), 167, '#169e88', false, .8);
-    car(position(rival), 336, '#f4cd45', false);
+    // A time-trial finish approaches with the countdown, then becomes fixed in world space.
+    if (state === 'racing' && elapsed >= SECONDS - 10) {
+      finishLine(playerX + 44 + (SECONDS - elapsed) * 80);
+    } else if (state === 'finished') {
+      finishLine(playerX + (finishLineDistance - visualDistance) * TRACK_SCALE);
+    }
+    opponentCar(ghostDistance(), visualDistance, 167, '#169e88', .8);
+    opponentCar(elapsed * 27, visualDistance, 336, '#f4cd45');
     const bob = state === 'racing' && !reducedMotion ? Math.sin(now / 65) * 1.4 : 0;
-    car(320, 251 + bob, '#d93850', boost > 0 && !reducedMotion);
+    car(playerX, 251 + bob, '#d93850', boost > 0 && !reducedMotion);
     ctx.fillStyle = '#20302d'; ctx.font = 'bold 14px system-ui'; ctx.fillText('SPELLING CIRCUIT / 60 SEC', 20, 415);
   }
 
@@ -263,9 +301,13 @@
         }
       } else if (state === 'racing') {
         const step = Math.min(dt, SECONDS - elapsed);
+        const previousDistance = distance;
         elapsed += step;
         distance += step * speed + Math.min(step, boost) * 35;
         advanceRewards(step);
+        const targetX = reducedMotion ? 320 : 320 + Math.min(200, (speed - 15 + (boost > 0 ? 35 : 0)) * 2.5);
+        const cameraShift = (targetX - playerX) * (1 - Math.exp(-step / .4));
+        playerX += Math.min(cameraShift, (distance - previousDistance) * TRACK_SCALE * .65);
         boost = Math.max(0, boost - step);
         speed = Math.max(15, speed - step * 1.5);
         while (trace.length <= Math.floor(elapsed)) trace.push(distance);
@@ -276,6 +318,8 @@
           $('banner').textContent = boost > 0 ? 'NITRO!' : elapsed >= 50 ? 'FINAL SPRINT!' : '';
         }
         updateHud();
+      } else if (state === 'finished') {
+        finishTime += dt;
       }
     }
     draw(now);

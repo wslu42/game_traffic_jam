@@ -4,19 +4,21 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync(require('node:path').join(__dirname, 'main.js'), 'utf8');
 
-function game({ storage = null, supported = true, storageFails = false } = {}) {
+function game({ storage = null, supported = true, storageFails = false, reducedMotion = false } = {}) {
   let now = 0, frame;
   const nodes = new Map(), utterances = [];
-  let rendered = { cars: [], stripes: [] };
+  let rendered = { cars: [], stripes: [], checks: [], labels: [] };
   const drawing = new Proxy({}, {
     get: (target, method) => (...args) => {
       if (method === 'translate') rendered.cars.push(args[0]);
       if (method === 'fillRect' && args[2] === 48 && args[3] === 3) rendered.stripes.push(args[0]);
+      if (method === 'fillRect' && args[2] === 16 && args[3] === 15.625) rendered.checks.push({ x: args[0], color: target.fillStyle });
+      if (method === 'fillText') rendered.labels.push(args);
     },
-    set: () => true,
+    set(target, key, value) { target[key] = value; return true; },
   });
   function stepFrame(milliseconds) {
-    rendered = { cars: [], stripes: [] };
+    rendered = { cars: [], stripes: [], checks: [], labels: [] };
     now += milliseconds; frame(now);
   }
   function node(id) {
@@ -42,7 +44,7 @@ function game({ storage = null, supported = true, storageFails = false } = {}) {
   vm.runInNewContext(source, {
     document, window: supported ? { speechSynthesis: synth, SpeechSynthesisUtterance: Utterance } : {},
     SpeechSynthesisUtterance: Utterance, localStorage, performance: { now: () => now },
-    matchMedia: () => ({ matches: false }), requestAnimationFrame(fn) { frame = fn; },
+    matchMedia: () => ({ matches: reducedMotion }), requestAnimationFrame(fn) { frame = fn; },
   });
   return {
     node, document, utterances, saved: () => JSON.parse(storage),
@@ -108,6 +110,70 @@ test('restarting discards pending answer rewards', () => {
   const g = game(); g.start(); g.tick(3.01); g.submit(g.word());
   g.start(); g.tick(3.01); g.tick(1.2);
   assert.ok(parseInt(g.node('distance').innerHTML, 10) < 20);
+});
+
+test('fast answers move the player forward and let trailing opponents leave the viewport', () => {
+  const g = game(); g.start(); g.tick(3.01);
+  for (let i = 0; i < 12; i++) { g.submit(g.word()); g.tick(.5); }
+  assert.ok(g.render().cars[2] > 400);
+  assert.ok(g.render().cars[0] < -45);
+  assert.ok(g.render().cars[1] < -45);
+  assert.ok(g.render().labels.some(([label]) => /^< \d+ m$/.test(label)));
+  const before = g.render().cars[0];
+  g.submit(g.word()); g.tick(.5);
+  assert.ok(g.render().cars[0] < before);
+});
+
+test('a faster last-run opponent exits ahead with a distance marker', () => {
+  const trace = Array.from({ length: 61 }, (_, i) => i * 100);
+  const g = game({ storage: JSON.stringify({ best: 6000, trace }) });
+  g.start(); g.tick(3.01); g.tick(15);
+  assert.ok(g.render().cars[0] > 1245);
+  assert.ok(g.render().labels.some(([label]) => /^> \d+ m$/.test(label)));
+});
+
+test('camera acceleration never reverses road movement', () => {
+  const g = game(); g.start(); g.tick(3.01);
+  for (let i = 0; i < 3; i++) { g.submit(g.word()); g.tick(.5); }
+  g.submit(g.word());
+  for (let i = 0; i < 30; i++) {
+    const before = g.render().stripes[0]; g.tick(.01);
+    const after = g.render().stripes[0];
+    const leftward = ((before - after) % 100 + 100) % 100;
+    assert.ok(leftward < 5);
+  }
+});
+
+test('finish line approaches, is crossed after time expires, and leaves scored distance unchanged', () => {
+  const g = game(); g.start(); g.tick(3.01); g.tick(49);
+  assert.equal(g.render().checks.length, 0);
+  g.tick(5);
+  assert.equal(g.render().checks.length, 48);
+  assert.equal(new Set(g.render().checks.map((square) => square.color)).size, 2);
+  const approaching = g.render().checks[0].x;
+  assert.ok(approaching > g.render().cars[2]);
+  g.tick(3);
+  assert.ok(g.render().checks[0].x < approaching);
+  g.tick(3.1);
+  const finalScore = g.node('distance').innerHTML;
+  const lineAtFinish = g.render().checks[0].x;
+  g.tick(1);
+  assert.ok(g.render().checks[0].x < lineAtFinish);
+  assert.ok(g.render().checks[0].x < g.render().cars[2]);
+  assert.equal(g.node('distance').innerHTML, finalScore);
+  g.start(); g.tick(.01);
+  assert.equal(g.render().checks.length, 0);
+});
+
+test('reduced motion keeps the player and post-finish scene still', () => {
+  const g = game({ reducedMotion: true }); g.start(); g.tick(3.01);
+  g.submit(g.word()); g.tick(1);
+  assert.equal(g.render().cars[2], 320);
+  g.tick(60);
+  const line = g.render().checks[0].x;
+  assert.ok(line < 320);
+  g.tick(1);
+  assert.equal(g.render().checks[0].x, line);
 });
 
 test('60 seconds ends the race, blocks late answers, and restart resets counters with last-run opponent', () => {
