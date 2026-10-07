@@ -1,0 +1,55 @@
+:root { color-scheme: light; font-family: system-ui, sans-serif; color: #20302d; background: #edf4f1; }
+* { box-sizing: border-box; letter-spacing: 0; }
+body { margin: 0; }
+main { max-width: 1100px; margin: auto; padding: 20px max(16px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)); }
+header { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; }
+header a { color: #36584c; text-decoration: none; font-weight: 700; }
+h1 { margin: 0; font-size: 28px; flex: 1; }
+h1 span { display: block; font-size: 14px; font-weight: 500; margin-top: 3px; }
+button { border: 0; border-radius: 6px; background: #20302d; color: white; padding: 12px 18px; min-height: 46px; font: inherit; font-weight: 700; cursor: pointer; }
+button:hover:not(:disabled) { background: #3b5e50; }
+button:disabled { opacity: .4; cursor: default; }
+button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid #169cbe; outline-offset: 3px; }
+#start { background: #d93850; }
+.hud { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 2px solid #20302d; padding: 14px 0; gap: 12px; }
+.hud div { min-width: 0; }
+.hud div > span { display: block; font-size: 12px; color: #526b61; }
+.hud strong { display: block; font-size: 30px; font-variant-numeric: tabular-nums; }
+.hud strong span { font-size: 14px; margin-left: 4px; }
+meter { width: 74px; height: 8px; display: block; }
+.track { position: relative; overflow: hidden; background: #84c9db; }
+canvas { display: block; width: 100%; aspect-ratio: 1200 / 430; }
+.race-labels { position: absolute; top: 12px; left: 14px; display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; font-weight: 700; }
+.race-labels span { display: flex; align-items: center; gap: 6px; }
+i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.red { background: #d93850; }.mint { background: #169e88; }.yellow { background: #f4cd45; }
+#banner { position: absolute; right: 18px; top: 48px; color: #20302d; font-size: 22px; font-weight: 900; text-align: right; pointer-events: none; }
+.cockpit { padding: 16px 0 4px; }
+.prompt-row { display: flex; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.prompt-row > span { font-weight: 700; font-size: 14px; }
+.prompt-row > div { display: flex; gap: 8px; }
+.prompt-row button { background: #dbe8e1; color: #20302d; }
+.icon { width: 48px; padding: 8px; }
+form { display: flex; gap: 8px; }
+input { width: 100%; min-width: 0; border: 2px solid #b7cbc0; border-radius: 6px; background: white; color: #20302d; padding: 12px 16px; font: 24px system-ui, sans-serif; }
+input[aria-invalid="true"] { border-color: #d93850; }
+#submit { width: 60px; flex: 0 0 60px; font-size: 26px; padding: 8px; background: #169e88; }
+#feedback { min-height: 24px; margin: 12px 0; font-weight: 650; font-size: 14px; }
+#results { border-top: 2px solid #20302d; padding-top: 16px; }
+[hidden] { display: none !important; }
+.result-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+h2 { font-size: 24px; margin: 0; }.result-heading strong { font-size: 28px; }
+h3 { font-size: 14px; margin: 20px 0 10px; }
+#review { display: flex; flex-wrap: wrap; gap: 8px; }
+#review button { background: #dbe8e1; color: #20302d; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+@media (max-width: 600px) {
+  main { padding-top: 12px; } header { gap: 10px; margin-bottom: 12px; } header a { font-size: 12px; }
+  h1 { font-size: 21px; } h1 span { font-size: 12px; } #start { padding: 10px; font-size: 14px; }
+  .hud { padding: 10px 0; gap: 6px; }.hud strong { font-size: 25px; }
+  canvas { aspect-ratio: 1200 / 600; } #banner { font-size: 17px; top: 42px; right: 10px; }
+  .race-labels { top: 10px; left: 10px; gap: 10px; font-size: 11px; }
+  .cockpit { padding-top: 10px; }.prompt-row { margin-bottom: 8px; }.prompt-row button { padding: 8px 10px; }
+  input { font-size: 20px; padding: 10px 12px; } #feedback { margin: 8px 0; }
+}
+@media (prefers-reduced-motion: reduce) { canvas { opacity: .95; } }

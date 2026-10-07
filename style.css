@@ -167,6 +167,14 @@ h1 span {
   background: var(--orange);
 }
 
+.game-card--spelling::before {
+  background: repeating-linear-gradient(0deg, #64c994 0 35px, #546661 35px 85px, #ffffff 85px 89px, #546661 89px 139px);
+}
+
+.game-card--spelling .game-card__button {
+  background: #d93850;
+}
+
 @media (max-width: 760px) {
   .portal {
     align-content: start;
