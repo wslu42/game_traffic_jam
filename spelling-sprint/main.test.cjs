@@ -296,7 +296,7 @@ test('fast player wins before opponents, exact finish time persists and ghost re
 test('fixed audio works without speech synthesis and failed audio still has a guarded fallback', () => {
   const fixed = game({ supported: false }); fixed.start(); fixed.tick(3.01);
   assert.equal(fixed.node('answer').disabled, false);
-  assert.ok(fixed.audioPlays.at(-1).includes('.mp3?v=2.0.4'));
+  assert.ok(fixed.audioPlays.at(-1).includes('.mp3?v=2.0.5'));
 
   const noAudio = game({ supported: false, words: [{ word: 'plain' }] }); noAudio.start(); noAudio.tick(70);
   assert.match(noAudio.node('feedback').textContent, /無法播放/);
@@ -351,7 +351,7 @@ test('a legacy single race loads without inventing a second opponent; corrupt ol
 test('fixed word and sentence audio are preloaded before the race', () => {
   const g = game();
   assert.equal(g.audioLoads.length, 14);
-  assert.ok(g.audioLoads.every((source) => /\.mp3\?v=2\.0\.4$/.test(source)));
+  assert.ok(g.audioLoads.every((source) => /\.mp3\?v=2\.0\.5$/.test(source)));
 });
 
 test('keyboard mode keeps answer focus while replaying and submitting', () => {
@@ -450,4 +450,21 @@ test('letter pad keeps fixed left anchors while frequency changes button width',
   assert.match(css, /nth-child\(25\)[^}]*grid-column:\s*1 \/ span 2/s);
   assert.match(css, /nth-child\(26\)[^}]*grid-column:\s*3 \/ span 2/s);
   assert.match(css, /nth-child\(27\)[^}]*grid-column:\s*5 \/ span 2/s);
+});
+
+
+test('letter pad uses pill corners, large backspace, and grays letters absent from the word bank', () => {
+  const g = game();
+  const pad = g.node('letter-pad');
+  const byLetter = (letter) => pad.children.find((button) => button.textContent === letter);
+  const backspace = pad.children.at(-1);
+
+  assert.equal(byLetter('e').attributes['data-present'], 'true');
+  assert.equal(byLetter('z').attributes['data-present'], 'false');
+  assert.equal(backspace.attributes['data-size'], 'large');
+  assert.equal(backspace.attributes['data-present'], 'true');
+
+  const css = require('node:fs').readFileSync(require('node:path').join(__dirname, 'style.css'), 'utf8');
+  assert.match(css, /#letter-pad button \{[^}]*border-radius:\s*999px/s);
+  assert.match(css, /data-present="false"[^}]*color:\s*#9aa7a2/s);
 });

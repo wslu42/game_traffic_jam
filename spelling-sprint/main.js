@@ -16,10 +16,10 @@
   const canvas = $('race');
   const ctx = canvas.getContext('2d');
   const scooterSheet = new Image();
-  scooterSheet.src = './scooter-sprites.png?v=2.0.4';
+  scooterSheet.src = './scooter-sprites.png?v=2.0.5';
   const greenSheet = new Image(), yellowSheet = new Image();
-  greenSheet.src = './scooter-green.png?v=2.0.4';
-  yellowSheet.src = './scooter-yellow.png?v=2.0.4';
+  greenSheet.src = './scooter-green.png?v=2.0.5';
+  yellowSheet.src = './scooter-yellow.png?v=2.0.5';
   // Normalized wheel-midpoint anchors keep the generated poses on the same ground.
   const poses = [
     { sx: 0, sy: 0, ax: 313, ay: 589 },
@@ -35,7 +35,7 @@
   function cachedAudio(source) {
     if (!mediaAvailable || !source) return null;
     if (!audioCache.has(source)) {
-      const audio = new Audio(`${source}?v=2.0.4`);
+      const audio = new Audio(`${source}?v=2.0.5`);
       audio.preload = 'auto';
       if (typeof audio.load === 'function') audio.load();
       audioCache.set(source, audio);
@@ -85,6 +85,7 @@
     button.setAttribute('aria-label', `字母 ${letter}`);
     button.setAttribute('data-frequency', String(frequency));
     button.setAttribute('data-size', frequency >= largeLetterThreshold ? 'large' : 'small');
+    button.setAttribute('data-present', frequency > 0 ? 'true' : 'false');
     button.disabled = true;
     button.addEventListener('click', () => {
       if (state !== 'racing' || advanceAt || $('answer').value.length >= 24) return;
@@ -98,6 +99,8 @@
   backspaceButton.type = 'button';
   backspaceButton.textContent = '⌫';
   backspaceButton.setAttribute('aria-label', '刪除最後一個字母');
+  backspaceButton.setAttribute('data-size', 'large');
+  backspaceButton.setAttribute('data-present', 'true');
   backspaceButton.disabled = true;
   backspaceButton.addEventListener('click', () => {
     if (state !== 'racing' || advanceAt) return;
