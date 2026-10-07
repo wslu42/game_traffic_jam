@@ -38,11 +38,14 @@ i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 input { width: 100%; min-width: 54px; height: 36px; border: 2px solid #b7cbc0; border-radius: 6px; background: white; color: #20302d; padding: 4px 7px; font: 19px system-ui, sans-serif; }
 input[aria-invalid="true"] { border-color: #d93850; }
 #submit { width: 42px; height: 36px; min-height: 36px; flex: 0 0 42px; font-size: 21px; padding: 3px; background: #169e88; }
-#letter-pad { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px; margin-top: 6px; }
-#letter-pad button { min-width: 0; min-height: 36px; height: 36px; padding: 3px; border-radius: 6px; background: #dbe8e1; color: #20302d; font-size: 15px; }
-#letter-pad button[data-size="small"] { flex: 0 0 32px; }
-#letter-pad button[data-size="large"] { flex: 0 0 48px; min-height: 40px; height: 40px; font-size: 18px; }
-#letter-pad button:last-child { flex: 0 0 42px; background: #526b61; color: white; }
+#letter-pad { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: center; gap: 4px; margin-top: 6px; }
+#letter-pad button { grid-column: span 2; min-width: 0; min-height: 36px; height: 36px; padding: 3px; border-radius: 6px; background: #dbe8e1; color: #20302d; font-size: 15px; }
+#letter-pad button[data-size="small"] { min-height: 36px; height: 36px; font-size: 15px; }
+#letter-pad button[data-size="large"] { min-height: 44px; height: 44px; font-size: 19px; }
+#letter-pad button:nth-child(25) { grid-column: 4 / span 2; }
+#letter-pad button:nth-child(26) { grid-column: 6 / span 2; }
+#letter-pad button:nth-child(27) { grid-column: 8 / span 2; }
+#letter-pad button:last-child { background: #526b61; color: white; }
 #letter-pad[hidden] { display: none !important; }
 #feedback { min-height: 20px; margin: 6px 0; font-weight: 650; font-size: 13px; }
 #results { border-top: 2px solid #20302d; padding-top: 16px; }
@@ -71,9 +74,8 @@ h3 { font-size: 14px; margin: 20px 0 10px; }
   #submit { width: 36px; height: 32px; min-height: 32px; flex-basis: 36px; font-size: 19px; }
   #letter-pad { gap: 3px; margin-top: 5px; }
   #letter-pad button { min-height: 34px; height: 34px; }
-  #letter-pad button[data-size="small"] { flex-basis: 30px; font-size: 14px; }
-  #letter-pad button[data-size="large"] { flex-basis: 45px; min-height: 38px; height: 38px; font-size: 17px; }
-  #letter-pad button:last-child { flex-basis: 40px; }
+  #letter-pad button[data-size="small"] { min-height: 34px; height: 34px; font-size: 14px; }
+  #letter-pad button[data-size="large"] { min-height: 42px; height: 42px; font-size: 18px; }
   #feedback { margin: 5px 0; }
 }
 @media (prefers-reduced-motion: reduce) { canvas { opacity: .95; } }
