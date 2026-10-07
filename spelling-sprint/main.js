@@ -16,10 +16,10 @@
   const canvas = $('race');
   const ctx = canvas.getContext('2d');
   const scooterSheet = new Image();
-  scooterSheet.src = './scooter-sprites.png?v=2.0.9';
+  scooterSheet.src = './scooter-sprites.png?v=2.0.10';
   const greenSheet = new Image(), yellowSheet = new Image();
-  greenSheet.src = './scooter-green.png?v=2.0.9';
-  yellowSheet.src = './scooter-yellow.png?v=2.0.9';
+  greenSheet.src = './scooter-green.png?v=2.0.10';
+  yellowSheet.src = './scooter-yellow.png?v=2.0.10';
   // Normalized wheel-midpoint anchors keep the generated poses on the same ground.
   const poses = [
     { sx: 0, sy: 0, ax: 313, ay: 589 },
@@ -35,7 +35,7 @@
   function cachedAudio(source) {
     if (!mediaAvailable || !source) return null;
     if (!audioCache.has(source)) {
-      const audio = new Audio(`${source}?v=2.0.9`);
+      const audio = new Audio(`${source}?v=2.0.10`);
       audio.preload = 'auto';
       if (typeof audio.load === 'function') audio.load();
       audioCache.set(source, audio);
@@ -83,12 +83,12 @@
     button.setAttribute('data-present', frequency > 0 ? 'true' : 'false');
     button.disabled = true;
     button.addEventListener('click', () => {
-      if (state !== 'racing' || advanceAt || $('answer').value.length >= 24) return;
+      if (state !== 'racing' || advanceAt || frequency === 0 || $('answer').value.length >= 24) return;
       $('answer').value += letter;
       $('answer').removeAttribute('aria-invalid');
     });
     letterPad.insertBefore(button, $('submit'));
-    letterButtons.push(button);
+    if (frequency > 0) letterButtons.push(button);
   }
   const backspaceButton = document.createElement('button');
   backspaceButton.type = 'button';
