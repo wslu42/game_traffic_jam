@@ -255,7 +255,7 @@ test('opponents finish independently; player crossing ends input and restart use
   assert.equal(g.node('results').hidden, true);
   g.tick(4);
   assert.equal(g.node('answer').disabled, true);
-  assert.match(g.node('result-title').textContent, /第 3 名/);
+  assert.match(g.node('result-title').textContent, /🥉 第 3 名/);
   assert.equal(g.node('distance').innerHTML, '2000<span>m</span>');
   const last = g.saved(); g.submit('these'); assert.equal(g.node('correct').textContent, 0);
   g.start(); assert.equal(g.node('results').hidden, true);
@@ -280,7 +280,7 @@ test('fast player wins before opponents, exact finish time persists and ghost re
   const g = game(); g.start(); g.tick(3.01);
   for (let i = 0; i < 100 && !g.node('answer').disabled; i++) { g.submit(g.word()); g.tick(.5); }
   assert.equal(g.node('results').hidden, false);
-  assert.match(g.node('result-title').textContent, /第 1 名/);
+  assert.match(g.node('result-title').textContent, /🥇 第 1 名/);
   const record = g.saved();
   assert.ok(record.time < 2000 / 27);
   assert.equal(record.best, record.time);
@@ -351,7 +351,7 @@ test('a legacy single race loads without inventing a second opponent; corrupt ol
 test('fixed word and sentence audio are preloaded before the race', () => {
   const g = game();
   assert.equal(g.audioLoads.length, 14);
-  assert.ok(g.audioLoads.every((source) => /\.mp3\?v=1\.5\.1$/.test(source)));
+  assert.ok(g.audioLoads.every((source) => /\.mp3\?v=2\.0\.0$/.test(source)));
 });
 
 test('mobile controls keep answer focus while replaying and submitting', () => {
@@ -367,4 +367,47 @@ test('mobile controls keep answer focus while replaying and submitting', () => {
   const beforeSubmit = focuses;
   g.submit(g.word());
   assert.ok(focuses > beforeSubmit);
+});
+
+
+test('letter pad is the default and stays mutually exclusive with the system keyboard', () => {
+  const g = game();
+  assert.equal(g.node('letter-pad').hidden, false);
+  assert.equal(g.node('answer').readOnly, true);
+  assert.equal(g.node('answer').attributes.inputmode, 'none');
+  assert.equal(g.node('letter-mode').attributes['aria-pressed'], 'true');
+  assert.equal(g.node('keyboard-mode').attributes['aria-pressed'], 'false');
+
+  let focuses = 0, blurs = 0;
+  g.node('answer').focus = () => { focuses++; };
+  g.node('answer').blur = () => { blurs++; };
+  g.start(); g.tick(3.01);
+  assert.equal(focuses, 0);
+  assert.ok(blurs >= 1);
+
+  g.node('keyboard-mode').listeners.click();
+  assert.equal(g.node('letter-pad').hidden, true);
+  assert.equal(g.node('answer').readOnly, false);
+  assert.equal(g.node('answer').attributes.inputmode, 'text');
+  assert.equal(g.node('keyboard-mode').attributes['aria-pressed'], 'true');
+  assert.ok(focuses >= 1);
+
+  g.node('letter-mode').listeners.click();
+  assert.equal(g.node('letter-pad').hidden, false);
+  assert.equal(g.node('answer').readOnly, true);
+  assert.equal(g.node('answer').attributes.inputmode, 'none');
+  assert.ok(blurs >= 2);
+});
+
+test('letter pad enters and deletes letters without needing keyboard focus', () => {
+  const g = game(); g.start(); g.tick(3.01);
+  const pad = g.node('letter-pad');
+  assert.equal(pad.children.length, 27);
+  const t = pad.children.find((button) => button.textContent === 'T');
+  const h = pad.children.find((button) => button.textContent === 'H');
+  const backspace = pad.children.at(-1);
+  t.listeners.click(); h.listeners.click();
+  assert.equal(g.node('answer').value, 'th');
+  backspace.listeners.click();
+  assert.equal(g.node('answer').value, 't');
 });

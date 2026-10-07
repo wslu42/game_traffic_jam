@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Spelling Sprint | 拼字競速賽</title>
-  <link rel="stylesheet" href="./style.css?v=1.5.1">
-  <link rel="stylesheet" href="../version.css?v=1.5.1">
+  <link rel="stylesheet" href="./style.css?v=2.0.0">
+  <link rel="stylesheet" href="../version.css?v=2.0.0">
 </head>
 <body>
   <main>
-    <header><a href="../index.html" aria-label="回到遊戲入口">← 遊戲</a><h1>Spelling Sprint <span>拼字競速賽 · 2 km</span><small class="game-version" aria-label="Version 1.5.1">v1.5.1</small></h1><button id="start" type="button">開始</button></header>
+    <header><a href="../index.html" aria-label="回到遊戲入口">← 遊戲</a><h1>Spelling Sprint <span>拼字競速賽 · 2 km</span><small class="game-version" aria-label="Version 2.0.0">v2.0.0</small></h1><button id="start" type="button">開始</button></header>
     <section class="hud" aria-label="比賽狀態">
       <div><span>用時</span><strong id="time">0.0<span>s</span></strong></div>
       <div><span>路程</span><strong id="distance">0<span>m</span></strong></div>
@@ -23,11 +23,16 @@
     </section>
     <section class="cockpit" id="cockpit">
       <div class="prompt-row"><span id="question">準備起跑</span><div><button id="replay" class="icon" type="button" disabled title="重播單字" aria-label="重播單字">🔊</button><button id="sentence" type="button" disabled>例句</button></div></div>
+      <div class="input-mode" role="group" aria-label="輸入方式">
+        <button id="letter-mode" type="button" aria-pressed="true">🔤 字母盤</button>
+        <button id="keyboard-mode" type="button" aria-pressed="false">⌨️ 鍵盤</button>
+      </div>
       <form id="answer-form" autocomplete="off">
         <label class="sr-only" for="answer">輸入聽到的英文單字</label>
-        <input id="answer" name="spelling" type="text" placeholder="輸入英文單字" lang="en" inputmode="text" enterkeyhint="go" autocapitalize="none" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="24" disabled>
+        <input id="answer" name="spelling" type="text" placeholder="依序選擇字母" lang="en" inputmode="none" enterkeyhint="go" autocapitalize="none" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="24" readonly disabled>
         <button id="submit" type="submit" disabled title="送出答案" aria-label="送出答案">➜</button>
       </form>
+      <div id="letter-pad" aria-label="英文字母盤"></div>
       <p id="feedback" role="status" aria-live="polite"></p>
     </section>
     <section id="results" hidden aria-labelledby="result-title">
@@ -36,7 +41,7 @@
       <h3>錯字複習</h3><div id="review"></div>
     </section>
   </main>
-  <script src="./words.js?v=1.5.1" defer></script>
-  <script src="./main.js?v=1.5.1" defer></script>
+  <script src="./words.js?v=2.0.0" defer></script>
+  <script src="./main.js?v=2.0.0" defer></script>
 </body>
 </html>

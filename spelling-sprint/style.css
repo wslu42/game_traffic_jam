@@ -52,5 +52,17 @@ h3 { font-size: 14px; margin: 20px 0 10px; }
   .race-labels { gap: 6px; font-size: 11px; }
   .cockpit { padding-top: 10px; }.prompt-row { margin-bottom: 8px; }.prompt-row button { padding: 8px 10px; }
   input { font-size: 20px; padding: 10px 12px; } #feedback { margin: 8px 0; }
+  .input-mode { margin-bottom: 6px; }
+  .input-mode button { min-height: 30px; padding: 4px 7px; font-size: 11px; }
+  #letter-pad { gap: 3px; margin-top: 6px; }
+  #letter-pad button { min-height: 38px; font-size: 17px; padding: 4px 1px; }
 }
 @media (prefers-reduced-motion: reduce) { canvas { opacity: .95; } }
+
+.input-mode { display: inline-flex; gap: 2px; margin: 0 0 8px; padding: 2px; border-radius: 8px; background: #dbe8e1; }
+.input-mode button { min-height: 34px; padding: 5px 9px; border-radius: 6px; background: transparent; color: #36584c; font-size: 12px; }
+.input-mode button[aria-pressed="true"] { background: #20302d; color: white; }
+#letter-pad { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 4px; margin-top: 8px; }
+#letter-pad button { min-width: 0; min-height: 42px; padding: 6px 2px; border-radius: 6px; background: #dbe8e1; color: #20302d; font-size: 18px; }
+#letter-pad button:last-child { background: #526b61; color: white; }
+#letter-pad[hidden] { display: none !important; }

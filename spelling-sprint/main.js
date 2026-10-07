@@ -16,10 +16,10 @@
   const canvas = $('race');
   const ctx = canvas.getContext('2d');
   const scooterSheet = new Image();
-  scooterSheet.src = './scooter-sprites.png?v=1.5.1';
+  scooterSheet.src = './scooter-sprites.png?v=2.0.0';
   const greenSheet = new Image(), yellowSheet = new Image();
-  greenSheet.src = './scooter-green.png?v=1.5.1';
-  yellowSheet.src = './scooter-yellow.png?v=1.5.1';
+  greenSheet.src = './scooter-green.png?v=2.0.0';
+  yellowSheet.src = './scooter-yellow.png?v=2.0.0';
   // Normalized wheel-midpoint anchors keep the generated poses on the same ground.
   const poses = [
     { sx: 0, sy: 0, ax: 313, ay: 589 },
@@ -35,7 +35,7 @@
   function cachedAudio(source) {
     if (!mediaAvailable || !source) return null;
     if (!audioCache.has(source)) {
-      const audio = new Audio(`${source}?v=1.5.1`);
+      const audio = new Audio(`${source}?v=2.0.0`);
       audio.preload = 'auto';
       if (typeof audio.load === 'function') audio.load();
       audioCache.set(source, audio);
@@ -64,6 +64,55 @@
     }
   } catch { /* Storage may be unavailable in private browsing. */ }
   let state = 'ready', elapsed = 0, distance = 0, speed = 15, boost = 0;
+  let inputMode = 'letters';
+  const letterButtons = [];
+  const letterPad = $('letter-pad');
+  for (const letter of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = letter;
+    button.setAttribute('aria-label', `字母 ${letter}`);
+    button.disabled = true;
+    button.addEventListener('click', () => {
+      if (state !== 'racing' || advanceAt || $('answer').value.length >= 24) return;
+      $('answer').value += letter.toLowerCase();
+      $('answer').removeAttribute('aria-invalid');
+    });
+    letterPad.append(button);
+    letterButtons.push(button);
+  }
+  const backspaceButton = document.createElement('button');
+  backspaceButton.type = 'button';
+  backspaceButton.textContent = '⌫';
+  backspaceButton.setAttribute('aria-label', '刪除最後一個字母');
+  backspaceButton.disabled = true;
+  backspaceButton.addEventListener('click', () => {
+    if (state !== 'racing' || advanceAt) return;
+    $('answer').value = $('answer').value.slice(0, -1);
+    $('answer').removeAttribute('aria-invalid');
+  });
+  letterPad.append(backspaceButton);
+  letterButtons.push(backspaceButton);
+
+  function focusAnswer() {
+    if (inputMode === 'keyboard' && (state === 'countdown' || state === 'racing')) {
+      $('answer').focus({ preventScroll: true });
+    }
+  }
+
+  function applyInputMode(mode) {
+    inputMode = mode === 'keyboard' ? 'keyboard' : 'letters';
+    const letters = inputMode === 'letters';
+    $('letter-mode').setAttribute('aria-pressed', String(letters));
+    $('keyboard-mode').setAttribute('aria-pressed', String(!letters));
+    letterPad.hidden = !letters;
+    $('answer').readOnly = letters;
+    $('answer').setAttribute('inputmode', letters ? 'none' : 'text');
+    $('answer').placeholder = letters ? '依序選擇字母' : '輸入英文單字';
+    if (letters) $('answer').blur();
+    else focusAnswer();
+  }
+  applyInputMode('letters');
   let rewards = [];
   let playerX = 320, finishTime = 0;
   let correct = 0, attempts = 0, streak = 0, question = 0, current = null;
@@ -163,6 +212,7 @@
 
   function setInputEnabled(enabled) {
     ['answer', 'submit', 'replay', 'sentence'].forEach((id) => { $(id).disabled = !enabled; });
+    letterButtons.forEach((button) => { button.disabled = !enabled; });
   }
 
   function shuffledWords() {
@@ -185,7 +235,7 @@
     $('answer').value = '';
     $('answer').removeAttribute('aria-invalid');
     setInputEnabled(true);
-    $('answer').focus({ preventScroll: true });
+    focusAnswer();
     speak(current.word, current.audio);
   }
 
@@ -215,10 +265,11 @@
     $('answer').removeAttribute('aria-invalid');
     $('question').textContent = '準備起跑';
     $('feedback').textContent = '';
-    // Keep the mobile keyboard open across the countdown and subsequent questions.
     $('answer').disabled = false;
-    $('answer').focus({ preventScroll: true });
+    if (inputMode === 'keyboard') focusAnswer();
+    else $('answer').blur();
     ['submit', 'replay', 'sentence'].forEach((id) => { $(id).disabled = true; });
+    letterButtons.forEach((button) => { button.disabled = true; });
     chooseVoice();
     primeFixedAudio();
     updateHud();
@@ -233,7 +284,8 @@
     trace.push({ time: elapsed, distance: RACE_DISTANCE });
     const previousBest = saved ? saved.best : Infinity;
     const place = 1 + [opponentTrace, challengerTrace].filter((record) => record && record.at(-1).time < elapsed).length;
-    $('result-title').textContent = `第 ${place} 名`;
+    const placeIcon = ['', '🥇', '🥈', '🥉'][place] || '🏁';
+    $('result-title').textContent = `${placeIcon} 第 ${place} 名`;
     $('result-distance').textContent = `${elapsed.toFixed(2)} s`;
     $('result-stats').textContent = `答對 ${correct} 題 · 正確率 ${attempts ? Math.round(correct / attempts * 100) : 0}%`;
     $('result-record').textContent = `${elapsed < previousBest ? '新紀錄！' : '最佳紀錄'} ${Math.min(previousBest, elapsed).toFixed(2)} s`;
@@ -262,8 +314,10 @@
   ['submit', 'replay', 'sentence'].forEach((id) => {
     $(id).addEventListener('pointerdown', (event) => event.preventDefault());
   });
-  $('replay').addEventListener('click', () => { if (state === 'racing' && current) { speak(current.word, current.audio); $('answer').focus({ preventScroll: true }); } });
-  $('sentence').addEventListener('click', () => { if (state === 'racing' && current) { speak(`${current.word}. ${current.sentence}`, current.sentenceAudio); $('answer').focus({ preventScroll: true }); } });
+  $('letter-mode').addEventListener('click', () => applyInputMode('letters'));
+  $('keyboard-mode').addEventListener('click', () => applyInputMode('keyboard'));
+  $('replay').addEventListener('click', () => { if (state === 'racing' && current) { speak(current.word, current.audio); focusAnswer(); } });
+  $('sentence').addEventListener('click', () => { if (state === 'racing' && current) { speak(`${current.word}. ${current.sentence}`, current.sentenceAudio); focusAnswer(); } });
   $('answer-form').addEventListener('submit', (event) => {
     event.preventDefault();
     if (state !== 'racing' || advanceAt || distance >= RACE_DISTANCE || document.hidden) return;
@@ -287,7 +341,7 @@
       advanceAt = elapsed + 0.45;
     }
     feedbackUntil = elapsed + 2;
-    $('answer').focus({ preventScroll: true });
+    focusAnswer();
     updateHud();
   });
 
