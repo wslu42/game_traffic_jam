@@ -78,10 +78,3 @@ h3 { font-size: 14px; margin: 20px 0 10px; }
 }
 @media (prefers-reduced-motion: reduce) { canvas { opacity: .95; } }
 
-.input-mode { display: inline-flex; gap: 2px; margin: 0 0 8px; padding: 2px; border-radius: 8px; background: #dbe8e1; }
-.input-mode button { min-height: 34px; padding: 5px 9px; border-radius: 6px; background: transparent; color: #36584c; font-size: 12px; }
-.input-mode button[aria-pressed="true"] { background: #20302d; color: white; }
-#letter-pad { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 4px; margin-top: 8px; }
-#letter-pad button { min-width: 0; min-height: 42px; padding: 6px 2px; border-radius: 6px; background: #dbe8e1; color: #20302d; font-size: 18px; }
-#letter-pad button:last-child { background: #526b61; color: white; }
-#letter-pad[hidden] { display: none !important; }

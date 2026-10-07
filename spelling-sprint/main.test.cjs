@@ -296,7 +296,7 @@ test('fast player wins before opponents, exact finish time persists and ghost re
 test('fixed audio works without speech synthesis and failed audio still has a guarded fallback', () => {
   const fixed = game({ supported: false }); fixed.start(); fixed.tick(3.01);
   assert.equal(fixed.node('answer').disabled, false);
-  assert.ok(fixed.audioPlays.at(-1).includes('.mp3?v=2.0.1'));
+  assert.ok(fixed.audioPlays.at(-1).includes('.mp3?v=2.0.2'));
 
   const noAudio = game({ supported: false, words: [{ word: 'plain' }] }); noAudio.start(); noAudio.tick(70);
   assert.match(noAudio.node('feedback').textContent, /無法播放/);
@@ -351,7 +351,7 @@ test('a legacy single race loads without inventing a second opponent; corrupt ol
 test('fixed word and sentence audio are preloaded before the race', () => {
   const g = game();
   assert.equal(g.audioLoads.length, 14);
-  assert.ok(g.audioLoads.every((source) => /\.mp3\?v=2\.0\.1$/.test(source)));
+  assert.ok(g.audioLoads.every((source) => /\.mp3\?v=2\.0\.2$/.test(source)));
 });
 
 test('keyboard mode keeps answer focus while replaying and submitting', () => {
