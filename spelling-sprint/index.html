@@ -4,38 +4,38 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Spelling Sprint | 拼字競速賽</title>
-  <link rel="stylesheet" href="./style.css?v=1.3.1">
-  <link rel="stylesheet" href="../version.css?v=1.3.1">
+  <link rel="stylesheet" href="./style.css?v=1.4.0">
+  <link rel="stylesheet" href="../version.css?v=1.4.0">
 </head>
 <body>
   <main>
-    <header><a href="../index.html" aria-label="回到遊戲入口">← Arcade</a><h1>Spelling Sprint <span>拼字競速賽</span><small class="game-version" aria-label="Version 1.3.1">v1.3.1</small></h1><button id="start" type="button">開始比賽</button></header>
+    <header><a href="../index.html" aria-label="回到遊戲入口">← 遊戲</a><h1>Spelling Sprint <span>拼字競速賽 · 5 km</span><small class="game-version" aria-label="Version 1.4.0">v1.4.0</small></h1><button id="start" type="button">開始</button></header>
     <section class="hud" aria-label="比賽狀態">
       <div><span>用時</span><strong id="time">0.0<span>s</span></strong></div>
-      <div><span>距離</span><strong id="distance">0<span>m</span></strong></div>
+      <div><span>路程</span><strong id="distance">0<span>m</span></strong></div>
       <div><span>答對</span><strong id="correct">0</strong></div>
       <div><span>連對</span><strong id="streak">0</strong><meter id="nitro" min="0" max="3" value="0" aria-label="衝刺能量"></meter></div>
     </section>
     <section class="track" aria-label="賽道">
+      <div class="race-labels"><span><i class="red"></i>你</span><span id="opponent"><i class="mint"></i>上次的你<small id="opponent-state"></small></span><span id="challenger"><i class="yellow"></i>上上次的你<small id="challenger-state"></small></span></div>
       <canvas id="race" width="1200" height="430" aria-label="拼字滑板車競速賽動畫"></canvas>
-      <div class="race-labels"><span><i class="red"></i>你</span><span id="opponent"><i class="mint"></i>電腦選手</span><span><i class="yellow"></i>挑戰選手</span></div>
-      <div id="banner">READY TO RACE</div>
+      <div id="banner"></div>
     </section>
-    <section class="cockpit">
-      <div class="prompt-row"><span id="question">5,000 公尺競速賽</span><div><button id="replay" class="icon" type="button" disabled title="重播單字" aria-label="重播單字">🔊</button><button id="sentence" type="button" disabled>聽例句</button></div></div>
+    <section class="cockpit" id="cockpit">
+      <div class="prompt-row"><span id="question">準備起跑</span><div><button id="replay" class="icon" type="button" disabled title="重播單字" aria-label="重播單字">🔊</button><button id="sentence" type="button" disabled>例句</button></div></div>
       <form id="answer-form" autocomplete="off">
         <label class="sr-only" for="answer">輸入聽到的英文單字</label>
         <input id="answer" name="spelling" type="text" placeholder="輸入英文單字" lang="en" inputmode="text" autocapitalize="none" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="24" disabled>
         <button id="submit" type="submit" disabled title="送出答案" aria-label="送出答案">➜</button>
       </form>
-      <p id="feedback" role="status" aria-live="polite">準備好了嗎？</p>
+      <p id="feedback" role="status" aria-live="polite"></p>
     </section>
     <section id="results" hidden aria-labelledby="result-title">
       <div class="result-heading"><h2 id="result-title">完賽！</h2><strong id="result-distance"></strong></div>
       <p id="result-stats"></p><p id="result-record"></p>
-      <h3>再練一下</h3><div id="review"></div>
+      <h3>錯字複習</h3><div id="review"></div>
     </section>
   </main>
-  <script src="./main.js?v=1.3.1" defer></script>
+  <script src="./main.js?v=1.4.0" defer></script>
 </body>
 </html>

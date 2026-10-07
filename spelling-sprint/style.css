@@ -19,11 +19,12 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 meter { width: 74px; height: 8px; display: block; }
 .track { position: relative; overflow: hidden; background: #84c9db; }
 canvas { display: block; width: 100%; aspect-ratio: 1200 / 430; }
-.race-labels { position: absolute; top: 12px; left: 14px; display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; font-weight: 700; }
-.race-labels span { display: flex; align-items: center; gap: 6px; }
+.race-labels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); height: 60px; padding: 8px 0; gap: 12px; font-size: 12px; font-weight: 700; background: #edf4f1; }
+.race-labels span { display: flex; flex-wrap: wrap; align-items: center; align-content: start; column-gap: 6px; row-gap: 2px; line-height: 18px; min-width: 0; }
+.race-labels small { width: 100%; min-height: 14px; padding-left: 16px; font-size: 11px; font-weight: 400; color: #526b61; }
 i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 .red { background: #d93850; }.mint { background: #169e88; }.yellow { background: #f4cd45; }
-#banner { position: absolute; right: 18px; top: 48px; color: #20302d; font-size: 22px; font-weight: 900; text-align: right; pointer-events: none; }
+#banner { position: absolute; right: 18px; top: 80px; color: #20302d; font-size: 22px; font-weight: 900; text-align: right; pointer-events: none; }
 .cockpit { padding: 16px 0 4px; }
 .prompt-row { display: flex; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .prompt-row > span { font-weight: 700; font-size: 14px; }
@@ -47,8 +48,8 @@ h3 { font-size: 14px; margin: 20px 0 10px; }
   main { padding-top: 12px; } header { gap: 10px; margin-bottom: 12px; } header a { font-size: 12px; }
   h1 { font-size: 21px; } h1 span { font-size: 12px; } #start { padding: 10px; font-size: 14px; }
   .hud { padding: 10px 0; gap: 6px; }.hud strong { font-size: 25px; }
-  canvas { aspect-ratio: 1200 / 600; } #banner { font-size: 17px; top: 42px; right: 10px; }
-  .race-labels { top: 10px; left: 10px; gap: 10px; font-size: 11px; }
+  canvas { aspect-ratio: 1200 / 600; } #banner { font-size: 17px; right: 10px; }
+  .race-labels { gap: 6px; font-size: 11px; }
   .cockpit { padding-top: 10px; }.prompt-row { margin-bottom: 8px; }.prompt-row button { padding: 8px 10px; }
   input { font-size: 20px; padding: 10px 12px; } #feedback { margin: 8px 0; }
 }

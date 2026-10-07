@@ -4,7 +4,12 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync(require('node:path').join(__dirname, 'main.js'), 'utf8');
 
-function game({ storage = null, supported = true, storageFails = false, reducedMotion = false, spriteFails = false } = {}) {
+function record(speed) {
+  const time = 5000 / speed;
+  return { time, trace: [{ time: 0, distance: 0 }, { time, distance: 5000 }] };
+}
+
+function game({ storage = JSON.stringify({ best: 5000 / 27, ...record(24), previous: record(27) }), supported = true, storageFails = false, reducedMotion = false, spriteFails = false } = {}) {
   let now = 0, frame;
   const nodes = new Map(), utterances = [];
   let rendered = { cars: [], stripes: [], checks: [], labels: [], sprites: [] };
@@ -108,7 +113,7 @@ test('fourth correct answer keeps nitro active until its three-second duration e
   assert.equal(g.node('nitro').value, 3);
   assert.match(g.node('feedback').textContent, /衝刺中/);
   g.tick(.5);
-  assert.equal(g.node('banner').textContent, 'SPRINT!');
+  assert.equal(g.node('banner').textContent, '');
   g.tick(2.1);
   assert.equal(g.node('nitro').value, 1);
   assert.equal(g.node('nitro').attributes['aria-label'], '衝刺能量');
@@ -204,7 +209,7 @@ test('opponents finish independently; player crossing ends input and restart use
   const g = game(); g.start(); g.tick(3.01); g.tick(300);
   assert.equal(g.node('answer').disabled, false);
   assert.equal(g.node('results').hidden, true);
-  assert.ok(g.render().labels.some(([label]) => label === 'FINISHED'));
+  assert.equal(g.node('challenger-state').textContent, '已完賽');
   const opponentX = g.render().cars[1], lineX = g.render().checks[0].x;
   assert.ok(Math.abs(opponentX - lineX) < 1e-8);
   g.tick(30);
@@ -215,7 +220,8 @@ test('opponents finish independently; player crossing ends input and restart use
   assert.equal(g.node('distance').innerHTML, '5000<span>m</span>');
   const last = g.saved(); g.submit('these'); assert.equal(g.node('correct').textContent, 0);
   g.start(); assert.equal(g.node('results').hidden, true);
-  assert.match(g.node('opponent').innerHTML, /上次的你/);
+  g.tick(.01);
+  assert.equal(g.node('opponent-state').textContent, '');
   g.tick(3.01); g.submit(g.word());
   assert.equal(g.node('correct').textContent, 1);
   assert.ok(last.best > 0);
@@ -241,10 +247,11 @@ test('fast player wins before opponents, exact finish time persists and ghost re
   assert.equal(record.best, record.time);
   assert.equal(record.trace.at(-1).time, record.time);
   const replay = game({ storage: JSON.stringify(record) }); replay.start(); replay.tick(3.01);
-  assert.match(replay.node('opponent').innerHTML, /上次的你/);
+  replay.tick(.01);
+  assert.equal(replay.node('opponent-state').textContent, '');
   replay.tick(record.time + .5);
   assert.equal(replay.node('results').hidden, true);
-  assert.ok(replay.render().labels.some(([label]) => label === 'FINISHED'));
+  assert.equal(replay.node('opponent-state').textContent, '已完賽');
 });
 
 test('missing speech and synthesis failures do not run an unanswerable race', () => {
@@ -263,5 +270,36 @@ test('unavailable or corrupt storage does not prevent completing a race', () => 
   for (const options of [{ storageFails: true }, { storage: '{bad' }, { storage: JSON.stringify({ best: 3, trace: [0, -1] }) }]) {
     const g = game(options); g.start(); g.tick(3.01); g.tick(350);
     assert.equal(g.node('results').hidden, false);
+  }
+});
+
+test('history rolls only on completion and replays the last two races after reload', () => {
+  const g = game({ storage: null }); g.start(); g.tick(3.01);
+  assert.equal(g.render().cars.length, 1);
+  assert.equal(g.node('challenger-state').textContent, '無紀錄');
+  for (let i = 0; i < 100 && !g.node('answer').disabled; i++) { g.submit(g.word()); g.tick(.5); }
+  const first = g.saved();
+  assert.equal(first.previous, null);
+  g.start(); g.tick(3.01); g.tick(1); g.start(); g.tick(3.01);
+  assert.equal(g.render().cars.length, 2);
+  assert.equal(g.saved().time, first.time);
+  g.tick(350);
+  const second = g.saved();
+  assert.deepEqual(second.previous, { time: first.time, trace: first.trace });
+  const reload = game({ storage: JSON.stringify(second) }); reload.start(); reload.tick(3.01);
+  assert.equal(reload.render().cars.length, 3);
+  reload.tick(first.time + .1);
+  assert.equal(reload.node('challenger-state').textContent, '已完賽');
+  assert.equal(reload.node('opponent-state').textContent, '');
+  for (let i = 0; i < 100 && !reload.node('answer').disabled; i++) { reload.submit(reload.word()); reload.tick(.5); }
+  assert.deepEqual(reload.saved().previous, { time: second.time, trace: second.trace });
+});
+
+test('a legacy single race loads without inventing a second opponent; corrupt older history is ignored', () => {
+  for (const previous of [undefined, { time: 1, trace: [null] }]) {
+    const g = game({ storage: JSON.stringify({ best: 50, ...record(100), previous }) });
+    g.start(); g.tick(3.01);
+    assert.equal(g.render().cars.length, 2);
+    assert.equal(g.node('challenger-state').textContent, '無紀錄');
   }
 });
