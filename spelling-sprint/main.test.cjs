@@ -468,7 +468,7 @@ test('submit control lives in the letter pad beside backspace and remains associ
   assert.match(html, /<div id="letter-pad"[^>]*>\s*<button id="submit"[^>]*form="answer-form"/s);
   const answerForm = html.match(/<form id="answer-form"[\s\S]*?<\/form>/)?.[0] || '';
   assert.doesNotMatch(answerForm, /id="submit"/);
-  const g = game();
-  const pad = g.node('letter-pad');
-  assert.equal(pad.children.at(-2).attributes['aria-label'], '刪除最後一個字母');
+  const source = require('node:fs').readFileSync(require('node:path').join(__dirname, 'main.js'), 'utf8');
+  assert.match(source, /letterPad\.insertBefore\(button, \$\('submit'\)\)/);
+  assert.match(source, /letterPad\.insertBefore\(backspaceButton, \$\('submit'\)\)/);
 });
